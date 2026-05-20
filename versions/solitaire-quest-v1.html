@@ -1,0 +1,2790 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no"/>
+<meta name="theme-color" content="#1a0b2e"/>
+<title>Solitaire Quest</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+/* =========================================================
+   Solitaire Quest — single-file styles
+   ========================================================= */
+:root{
+  --bg-0:#1a0b2e;
+  --bg-1:#2b1656;
+  --bg-2:#3a1d6a;
+  --accent:#ffd166;
+  --accent-2:#ef476f;
+  --accent-3:#06d6a0;
+  --ink:#fff;
+  --ink-soft:rgba(255,255,255,.72);
+  --ink-dim:rgba(255,255,255,.45);
+  --card-face:#fdfaf3;
+  --card-back-a:#5a2ca0;
+  --card-back-b:#2a0f5a;
+  --tab-h:64px;
+  --safe-top:0px;
+  --safe-bottom:0px;
+  --hud-h:56px;
+  --bar-h:72px;
+  --pill-bg:rgba(255,255,255,.08);
+  --pill-bg-strong:rgba(255,255,255,.16);
+  --shadow-1:0 4px 14px rgba(0,0,0,.35);
+  --shadow-2:0 10px 30px rgba(0,0,0,.5);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
+html,body{margin:0;padding:0;height:100%;overflow:hidden;background:var(--bg-0);color:var(--ink);font-family:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;-webkit-font-smoothing:antialiased;font-feature-settings:"tnum"}
+body{overscroll-behavior:none;touch-action:manipulation}
+button{font-family:inherit;color:inherit;background:none;border:0;cursor:pointer;padding:0;font-weight:600}
+#app{
+  position:fixed;inset:0;
+  background:
+    radial-gradient(120% 80% at 50% -10%, rgba(91,42,160,.95) 0%, rgba(42,15,90,.95) 40%, rgba(20,8,50,1) 80%),
+    linear-gradient(180deg,#1a0b2e 0%, #0b0420 100%);
+  padding-top:var(--safe-top);
+  padding-bottom:calc(var(--safe-bottom) + var(--tab-h));
+  display:flex;flex-direction:column;
+}
+/* sparkles bg */
+#app::before{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background-image:
+    radial-gradient(2px 2px at 10% 18%, rgba(255,255,255,.55), transparent 60%),
+    radial-gradient(1.5px 1.5px at 80% 22%, rgba(255,209,102,.6), transparent 60%),
+    radial-gradient(2px 2px at 25% 70%, rgba(255,255,255,.4), transparent 60%),
+    radial-gradient(1px 1px at 70% 88%, rgba(6,214,160,.5), transparent 60%),
+    radial-gradient(1.5px 1.5px at 50% 40%, rgba(255,255,255,.35), transparent 60%);
+  opacity:.85;
+  animation:twinkle 6s ease-in-out infinite;
+}
+@keyframes twinkle{0%,100%{opacity:.85}50%{opacity:.55}}
+
+/* ---------- topbar ---------- */
+.topbar{
+  position:relative;z-index:5;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:8px 12px 6px;gap:8px;
+}
+.brand{display:flex;align-items:center;gap:6px;font-weight:800;font-size:14px;letter-spacing:.4px}
+.brand .logo{
+  width:28px;height:28px;border-radius:8px;
+  background:linear-gradient(135deg,#ffd166,#ef476f);
+  display:grid;place-items:center;font-size:16px;color:#1a0b2e;
+  box-shadow:var(--shadow-1)
+}
+.hud{display:flex;align-items:center;gap:6px}
+.pill{
+  display:flex;align-items:center;gap:5px;
+  background:var(--pill-bg);
+  border:1px solid rgba(255,255,255,.08);
+  backdrop-filter:blur(6px);
+  border-radius:999px;
+  padding:5px 10px;
+  font-size:12px;font-weight:700;
+}
+.pill .ic{font-size:13px;line-height:1}
+.pill.coin{color:#ffd166}
+.pill.star{color:#fff}
+.pill.streak{color:#ff7a59}
+.pill button.add{
+  width:18px;height:18px;border-radius:50%;
+  background:var(--accent);color:#1a0b2e;
+  font-size:13px;display:grid;place-items:center;margin-left:2px;
+  font-weight:900
+}
+.icon-btn{
+  width:34px;height:34px;border-radius:10px;
+  background:var(--pill-bg);
+  display:grid;place-items:center;font-size:16px;
+  border:1px solid rgba(255,255,255,.08);
+}
+.icon-btn:active{transform:scale(.95)}
+
+/* ---------- main + tabs ---------- */
+main{flex:1;position:relative;overflow:hidden}
+.tab-view{
+  position:absolute;inset:0;
+  display:none;
+  overflow:hidden;
+}
+.tab-view.active{display:flex;flex-direction:column}
+
+/* ---------- map screen ---------- */
+#map-screen{
+  flex:1;position:relative;
+  overflow-y:auto;overflow-x:hidden;
+  scrollbar-width:none;
+}
+#map-screen::-webkit-scrollbar{display:none}
+#map-scroller{
+  position:relative;
+  padding:12px 0 32px;
+}
+.map-header{
+  text-align:center;padding:14px 18px 6px;
+}
+.map-header h2{margin:0;font-size:20px;letter-spacing:.5px}
+.map-header p{margin:4px 0 0;color:var(--ink-soft);font-size:12px}
+.map-path{
+  position:relative;width:100%;
+}
+.map-node{
+  position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  width:88px;height:88px;margin:14px auto;
+  border-radius:24px;
+  background:linear-gradient(180deg, #ffd166 0%, #f59e3b 100%);
+  color:#1a0b2e;box-shadow:0 6px 0 #b97a1c, 0 12px 24px rgba(0,0,0,.45);
+  font-weight:900;
+  transition:transform .15s ease;
+}
+.map-node:active{transform:translateY(2px);box-shadow:0 4px 0 #b97a1c, 0 8px 18px rgba(0,0,0,.45)}
+.map-node.locked{
+  background:linear-gradient(180deg,#3a2c5a,#28204a);
+  color:#7b6ea0;box-shadow:0 4px 0 #1a1130, 0 6px 14px rgba(0,0,0,.4);
+}
+.map-node.current{
+  animation:bob 1.4s ease-in-out infinite;
+  outline:3px solid rgba(255,255,255,.6);outline-offset:3px;
+}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+.map-node .n-num{font-size:22px;line-height:1}
+.map-node .n-stars{font-size:10px;margin-top:3px;letter-spacing:1px;opacity:.85}
+.map-node .lock{font-size:24px}
+.map-node[data-side="L"]{transform:translateX(-72px)}
+.map-node[data-side="R"]{transform:translateX(72px)}
+.map-node[data-side="L"]:active{transform:translateX(-72px) translateY(2px)}
+.map-node[data-side="R"]:active{transform:translateX(72px) translateY(2px)}
+.map-node[data-side="L"].current{transform:translateX(-72px)}
+.map-node[data-side="R"].current{transform:translateX(72px)}
+.map-line{
+  position:absolute;left:50%;width:3px;background:rgba(255,255,255,.18);
+  border-radius:2px;
+}
+
+/* play button at bottom of map */
+#play-fab-wrap{
+  position:fixed;left:0;right:0;
+  bottom:calc(var(--safe-bottom) + var(--tab-h) + 14px);
+  display:flex;justify-content:center;pointer-events:none;z-index:6;
+}
+#play-fab{
+  pointer-events:auto;
+  background:linear-gradient(135deg,#06d6a0,#0fb98a);
+  color:#0a3320;
+  padding:14px 28px;border-radius:999px;
+  font-weight:900;font-size:16px;letter-spacing:.5px;
+  box-shadow:0 6px 0 #057a55, 0 12px 24px rgba(0,0,0,.4);
+  display:flex;align-items:center;gap:8px;
+}
+#play-fab:active{transform:translateY(2px);box-shadow:0 4px 0 #057a55, 0 8px 18px rgba(0,0,0,.4)}
+
+/* ---------- play screen ---------- */
+#play-screen{display:none;flex:1;flex-direction:column;position:relative}
+#play-screen.active{display:flex}
+#play-hud{
+  height:var(--hud-h);min-height:var(--hud-h);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 12px;gap:8px;
+}
+#play-hud .stats{display:flex;align-items:center;gap:6px}
+#play-hud .lvl-pill{
+  background:linear-gradient(135deg,#ffd166,#ef476f);
+  color:#1a0b2e;font-weight:900;padding:6px 10px;border-radius:10px;font-size:12px;letter-spacing:.6px
+}
+#play-hud .score{font-weight:900;font-size:20px}
+#play-hud .target{font-size:11px;color:var(--ink-soft)}
+.combo-bar-wrap{
+  flex:1;height:8px;background:rgba(255,255,255,.08);border-radius:6px;overflow:hidden;
+  margin:0 8px;position:relative;
+}
+.combo-bar{
+  height:100%;width:0%;
+  background:linear-gradient(90deg,#06d6a0,#ffd166,#ef476f);
+  border-radius:6px;transition:width .25s ease;
+}
+.combo-tier{
+  position:absolute;right:6px;top:50%;transform:translateY(-50%);
+  font-size:10px;font-weight:900;letter-spacing:.4px
+}
+#game-canvas{
+  flex:1;width:100%;display:block;
+  background:transparent;
+  touch-action:none;
+}
+#play-bar{
+  height:var(--bar-h);min-height:var(--bar-h);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:6px 12px 14px;gap:10px;
+  position:relative;
+}
+.booster-row{display:flex;gap:8px}
+.booster{
+  position:relative;
+  width:48px;height:54px;border-radius:14px;
+  background:var(--pill-bg-strong);
+  border:1px solid rgba(255,255,255,.1);
+  display:grid;place-items:center;font-size:24px;
+  transition:transform .12s ease;
+}
+.booster:active{transform:scale(.92)}
+.booster .count{
+  position:absolute;right:-4px;top:-4px;
+  min-width:18px;height:18px;border-radius:10px;
+  background:var(--accent);color:#1a0b2e;
+  font-size:10px;font-weight:900;display:grid;place-items:center;padding:0 4px;
+}
+.booster.empty{opacity:.55}
+.booster.empty .count{background:rgba(255,255,255,.2);color:#fff}
+.booster.armed{outline:3px solid var(--accent);outline-offset:2px;animation:pulseArm .8s ease-in-out infinite}
+@keyframes pulseArm{0%,100%{box-shadow:0 0 0 0 rgba(255,209,102,.5)}50%{box-shadow:0 0 0 8px rgba(255,209,102,0)}}
+.stock-pile{
+  position:relative;width:80px;height:108px;
+  display:grid;place-items:center;
+}
+.stock-card-back{
+  position:absolute;width:64px;height:90px;border-radius:9px;
+  background:linear-gradient(135deg,var(--card-back-a),var(--card-back-b));
+  box-shadow:var(--shadow-1);
+  border:2px solid rgba(255,255,255,.15);
+}
+.stock-card-back .pattern{
+  position:absolute;inset:6px;border-radius:5px;
+  border:1.5px dashed rgba(255,255,255,.2);
+}
+.stock-count{
+  position:absolute;bottom:-6px;right:-6px;
+  background:var(--accent);color:#1a0b2e;
+  font-size:11px;font-weight:900;
+  padding:2px 7px;border-radius:10px;
+  box-shadow:var(--shadow-1);
+}
+.waste-pile{position:relative;width:64px;height:90px}
+.combo-callout{
+  position:absolute;left:50%;top:38%;
+  transform:translate(-50%,-50%) scale(.4);opacity:0;
+  font-weight:900;font-size:34px;letter-spacing:1px;
+  text-shadow:0 4px 10px rgba(0,0,0,.6),0 0 16px rgba(255,209,102,.6);
+  pointer-events:none;color:#ffd166;
+  transition:transform .25s cubic-bezier(.18,1.6,.45,.95),opacity .25s ease;
+}
+.combo-callout.show{transform:translate(-50%,-50%) scale(1.15);opacity:1}
+
+/* floating +score popups (canvas-rendered actually, but keep style for tooltip) */
+
+/* ---------- bottom tabs ---------- */
+.bottom-tabs{
+  position:fixed;left:0;right:0;
+  bottom:0;
+  height:calc(var(--safe-bottom) + var(--tab-h));
+  padding-bottom:var(--safe-bottom);
+  display:flex;align-items:stretch;
+  background:rgba(20,8,50,.92);
+  backdrop-filter:blur(10px);
+  border-top:1px solid rgba(255,255,255,.06);
+  z-index:20;
+}
+.tab-btn{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  color:var(--ink-dim);font-size:11px;font-weight:700;letter-spacing:.4px;
+  transition:color .15s ease;
+}
+.tab-btn .ic{font-size:22px;line-height:1}
+.tab-btn.active{color:var(--accent)}
+.tab-btn.active .ic{filter:drop-shadow(0 0 6px rgba(255,209,102,.5))}
+
+/* ---------- shop tab ---------- */
+#view-shop{padding:0}
+#shop-scroll{flex:1;overflow-y:auto;padding:8px 12px 20px}
+#shop-scroll::-webkit-scrollbar{display:none}
+.shop-section-title{font-size:13px;letter-spacing:1.2px;font-weight:800;color:var(--ink-soft);margin:14px 4px 8px;text-transform:uppercase}
+.shop-featured{
+  margin:6px 0 4px;border-radius:18px;
+  background:linear-gradient(135deg,#ffd166 0%,#ef476f 100%);
+  color:#1a0b2e;
+  padding:14px;display:flex;gap:12px;align-items:center;
+  box-shadow:var(--shadow-2);
+}
+.shop-featured .icon{font-size:42px}
+.shop-featured h3{margin:0 0 4px;font-size:16px;font-weight:900}
+.shop-featured .sub{font-size:12px;font-weight:600;opacity:.85}
+.shop-featured .buy{
+  margin-left:auto;background:#1a0b2e;color:#ffd166;
+  border-radius:14px;padding:10px 14px;font-weight:900;font-size:13px;
+  display:flex;align-items:center;gap:4px;
+}
+.shop-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.shop-card{
+  background:var(--pill-bg);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:16px;
+  padding:12px;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;
+  position:relative
+}
+.shop-card .ic{font-size:30px;margin-top:4px}
+.shop-card h4{margin:2px 0 0;font-size:13px;font-weight:800}
+.shop-card .sub{font-size:11px;color:var(--ink-soft);min-height:28px}
+.shop-card .buy{
+  margin-top:6px;background:var(--accent);color:#1a0b2e;
+  border-radius:12px;padding:8px 0;font-weight:900;font-size:13px;width:100%;
+}
+.shop-card.owned .buy{background:rgba(255,255,255,.1);color:var(--ink-soft)}
+
+/* ---------- earn tab ---------- */
+#view-earn{padding:0}
+#earn-scroll{flex:1;overflow-y:auto;padding:8px 12px 20px}
+#earn-scroll::-webkit-scrollbar{display:none}
+.bp-banner{
+  margin:6px 0 8px;border-radius:14px;
+  background:linear-gradient(135deg,#6a3df0,#a83af0);
+  padding:12px;display:flex;justify-content:space-between;align-items:center;
+  box-shadow:var(--shadow-1)
+}
+.bp-banner h4{margin:0;font-size:13px;font-weight:900}
+.bp-banner .days{font-size:11px;opacity:.85}
+.bp-banner button{background:#1a0b2e;color:#ffd166;border-radius:10px;padding:8px 12px;font-weight:900;font-size:12px}
+.chest-card{
+  background:var(--pill-bg);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:16px;padding:12px;margin-bottom:10px;
+}
+.chest-card h4{margin:0 0 8px;font-size:14px;font-weight:800}
+.chest-row{display:flex;gap:6px;justify-content:space-between}
+.chest-cell{
+  flex:1;background:rgba(255,255,255,.04);border-radius:10px;
+  padding:8px 4px;text-align:center;
+  display:flex;flex-direction:column;align-items:center;gap:2px;
+  font-size:10px;font-weight:700;color:var(--ink-soft);
+  border:1px solid transparent;
+  position:relative
+}
+.chest-cell.claimed{background:rgba(6,214,160,.15);border-color:rgba(6,214,160,.4);color:#fff}
+.chest-cell.today{background:rgba(255,209,102,.18);border-color:rgba(255,209,102,.6);color:#fff;animation:pulseChest 1.4s ease-in-out infinite}
+@keyframes pulseChest{0%,100%{box-shadow:0 0 0 0 rgba(255,209,102,.5)}50%{box-shadow:0 0 0 6px rgba(255,209,102,0)}}
+.chest-cell .ic{font-size:18px;margin-top:2px}
+.chest-cell .rw{font-weight:900;color:#ffd166;font-size:11px}
+.chest-claim{
+  margin-top:10px;width:100%;background:var(--accent);color:#1a0b2e;
+  border-radius:12px;padding:10px;font-weight:900;font-size:13px;
+}
+.chest-claim:disabled,.chest-claim.disabled{background:rgba(255,255,255,.1);color:var(--ink-dim)}
+.mission{
+  display:flex;align-items:center;gap:10px;
+  background:var(--pill-bg);border:1px solid rgba(255,255,255,.06);
+  border-radius:14px;padding:10px;margin-bottom:8px;
+}
+.mission .ic{font-size:24px}
+.mission .body{flex:1}
+.mission .body h5{margin:0;font-size:13px;font-weight:800}
+.mission .body .sub{font-size:11px;color:var(--ink-soft);margin-top:2px}
+.mission .reward{font-size:11px;color:#ffd166;font-weight:800;margin-top:2px}
+.mission .btn{
+  background:var(--accent);color:#1a0b2e;
+  padding:8px 12px;border-radius:10px;font-weight:900;font-size:12px;
+}
+.mission .btn.check{background:#3a76ff;color:#fff}
+.mission .btn.done{background:rgba(255,255,255,.1);color:var(--ink-dim)}
+.lb-card{
+  background:var(--pill-bg);border:1px solid rgba(255,255,255,.06);
+  border-radius:14px;padding:10px 12px;margin-top:14px;
+}
+.lb-card h4{margin:0 0 8px;font-size:14px;font-weight:800}
+.lb-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:12px}
+.lb-row:last-child{border-bottom:0}
+.lb-row .rank{width:22px;font-weight:900;color:var(--accent)}
+.lb-row .name{flex:1}
+.lb-row .pts{font-weight:800}
+.lb-row.me{background:rgba(255,209,102,.1);border-radius:8px;padding:6px 8px}
+
+/* ---------- modals ---------- */
+#modal-root{position:fixed;inset:0;z-index:50;display:none;align-items:flex-end;justify-content:center;
+  background:rgba(8,3,22,.6);backdrop-filter:blur(6px)}
+#modal-root.open{display:flex}
+.modal{
+  width:100%;max-width:520px;margin:0 auto;
+  background:linear-gradient(180deg,#2b1656 0%,#1a0b2e 100%);
+  border-radius:24px 24px 0 0;
+  border-top:1px solid rgba(255,255,255,.08);
+  padding:18px 18px calc(18px + var(--safe-bottom));
+  box-shadow:0 -10px 40px rgba(0,0,0,.6);
+  animation:slideUp .25s ease;
+  position:relative;
+}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.modal h3{margin:0 0 6px;font-size:18px;font-weight:900;text-align:center}
+.modal p{margin:4px 0;color:var(--ink-soft);font-size:13px;text-align:center}
+.modal .x{position:absolute;right:12px;top:10px;width:32px;height:32px;border-radius:50%;background:var(--pill-bg);display:grid;place-items:center;font-size:16px}
+.modal .cta-row{display:flex;gap:10px;margin-top:14px}
+.modal .cta{
+  flex:1;background:var(--accent);color:#1a0b2e;
+  border-radius:14px;padding:14px;font-weight:900;font-size:15px;
+}
+.modal .cta.secondary{background:var(--pill-bg);color:var(--ink)}
+.modal .cta.danger{background:var(--accent-2);color:#fff}
+
+.stars-display{display:flex;gap:8px;justify-content:center;margin:12px 0}
+.stars-display .st{font-size:36px;filter:grayscale(1);opacity:.4;transform:scale(.7)}
+.stars-display .st.lit{filter:none;opacity:1;transform:scale(1);animation:starPop .4s ease}
+@keyframes starPop{0%{transform:scale(.2) rotate(-30deg)}60%{transform:scale(1.3) rotate(10deg)}100%{transform:scale(1) rotate(0)}}
+.reward-row{display:flex;gap:8px;justify-content:center;margin:10px 0}
+.reward-chip{
+  background:rgba(255,255,255,.08);border-radius:10px;padding:6px 10px;
+  display:flex;align-items:center;gap:4px;font-size:13px;font-weight:800
+}
+
+/* FTUE coach mark */
+.ftue-canvas-wrap{
+  margin:14px auto;width:100%;max-width:280px;height:200px;
+  background:rgba(0,0,0,.25);border-radius:14px;position:relative;overflow:hidden;
+}
+.ftue-dots{display:flex;gap:6px;justify-content:center;margin-top:8px}
+.ftue-dots .d{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.25)}
+.ftue-dots .d.on{background:var(--accent)}
+
+/* settings */
+.set-row{display:flex;align-items:center;justify-content:space-between;padding:10px 4px;border-bottom:1px solid rgba(255,255,255,.06)}
+.set-row:last-child{border-bottom:0}
+.set-row .lbl{font-size:14px}
+.toggle{
+  width:46px;height:26px;background:rgba(255,255,255,.15);border-radius:14px;position:relative;transition:background .2s
+}
+.toggle.on{background:var(--accent-3)}
+.toggle .dot{position:absolute;top:3px;left:3px;width:20px;height:20px;background:#fff;border-radius:50%;transition:transform .2s}
+.toggle.on .dot{transform:translateX(20px)}
+.lang-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:6px}
+.lang-cell{
+  background:var(--pill-bg);border:1px solid rgba(255,255,255,.06);
+  border-radius:10px;padding:8px;text-align:center;font-size:12px;font-weight:800
+}
+.lang-cell.on{background:var(--accent);color:#1a0b2e;border-color:transparent}
+
+/* ---------- toasts ---------- */
+#toast-root{position:fixed;left:0;right:0;top:calc(var(--safe-top) + 64px);z-index:60;display:flex;flex-direction:column;align-items:center;gap:6px;pointer-events:none}
+.toast{
+  background:rgba(20,8,50,.95);
+  color:#fff;
+  border:1px solid rgba(255,255,255,.1);
+  border-radius:12px;
+  padding:8px 14px;font-size:13px;font-weight:700;
+  box-shadow:var(--shadow-1);
+  animation:toastIn .25s ease, toastOut .3s ease 2.4s forwards;
+  max-width:80%;text-align:center;
+}
+@keyframes toastIn{from{opacity:0;transform:translateY(-12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes toastOut{to{opacity:0;transform:translateY(-12px)}}
+
+/* RTL */
+html[dir="rtl"] .map-node[data-side="L"]{transform:translateX(72px)}
+html[dir="rtl"] .map-node[data-side="R"]{transform:translateX(-72px)}
+
+</style>
+</head>
+<body>
+<div id="app">
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo">♣</div>
+      <div>Solitaire Quest</div>
+    </div>
+    <div class="hud">
+      <div class="pill streak" id="hud-streak" title="streak"><span class="ic">🔥</span><span id="hud-streak-n">0</span></div>
+      <div class="pill star" id="hud-stars"><span class="ic">⭐</span><span id="hud-stars-n">0</span></div>
+      <div class="pill coin" id="hud-coins"><span class="ic">🪙</span><span id="hud-coins-n">0</span><button class="add" data-act="open-shop">+</button></div>
+      <button class="icon-btn" id="btn-settings" title="Settings">⚙️</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- SHOP -->
+    <section class="tab-view" id="view-shop">
+      <div id="shop-scroll"></div>
+    </section>
+
+    <!-- PLAY (map + game) -->
+    <section class="tab-view active" id="view-play">
+      <div id="map-screen">
+        <div class="map-header">
+          <h2 id="map-title">Quest Map</h2>
+          <p id="map-sub">Three peaks. Endless combos.</p>
+        </div>
+        <div id="map-scroller" class="map-path"></div>
+      </div>
+      <div id="play-screen">
+        <div id="play-hud">
+          <div class="stats">
+            <div class="lvl-pill" id="play-lvl">L 1</div>
+            <div>
+              <div class="score" id="play-score">0</div>
+              <div class="target" id="play-target">/ 5000</div>
+            </div>
+          </div>
+          <div class="combo-bar-wrap">
+            <div class="combo-bar" id="combo-bar"></div>
+            <div class="combo-tier" id="combo-tier"></div>
+          </div>
+          <button class="icon-btn" id="btn-leave-play" title="Leave">✕</button>
+        </div>
+        <canvas id="game-canvas"></canvas>
+        <div id="play-bar">
+          <div class="booster-row" id="booster-row"></div>
+          <div class="waste-pile" id="waste-pile"></div>
+          <div class="stock-pile" id="stock-pile">
+            <div class="stock-card-back"><div class="pattern"></div></div>
+            <div class="stock-count" id="stock-count">0</div>
+          </div>
+        </div>
+        <div class="combo-callout" id="combo-callout"></div>
+      </div>
+      <div id="play-fab-wrap"><button id="play-fab"><span>▶</span><span id="play-fab-lbl">Play Level 1</span></button></div>
+    </section>
+
+    <!-- EARN -->
+    <section class="tab-view" id="view-earn">
+      <div id="earn-scroll"></div>
+    </section>
+  </main>
+
+  <nav class="bottom-tabs">
+    <button class="tab-btn" data-tab="shop"><span class="ic">🛒</span><span data-i18n="tab_shop">Shop</span></button>
+    <button class="tab-btn active" data-tab="play"><span class="ic">🎴</span><span data-i18n="tab_play">Play</span></button>
+    <button class="tab-btn" data-tab="earn"><span class="ic">🎁</span><span data-i18n="tab_earn">Earn</span></button>
+  </nav>
+
+  <div id="modal-root"></div>
+  <div id="toast-root"></div>
+</div>
+
+<script>
+"use strict";
+/* =========================================================
+   Solitaire Quest — single-file game
+   ========================================================= */
+
+/* ============== [JS-01] CONSTANTS ============== */
+const VERSION = '0.1.0';
+const CARD_W = 56;
+const CARD_H = 80;
+const CARD_R = 8;            // card corner radius
+const STACK_DY = 28;          // vertical stack offset
+const STACK_DX = 6;
+const COMBO_TIERS = [
+  { chain: 0,  mult: 1, label: '' },
+  { chain: 3,  mult: 2, label: 'NICE!' },
+  { chain: 5,  mult: 3, label: 'GREAT!' },
+  { chain: 7,  mult: 5, label: 'AMAZING!' },
+  { chain: 10, mult: 10, label: 'INCREDIBLE!' }
+];
+const BOOSTER_LIST = ['wild','shuffle','undo'];
+const BOOSTER_ICON = { wild:'🃏', shuffle:'🔀', undo:'↶', revive:'❤️' };
+const SKU_DISPLAY = {
+  coins_small:   { ic:'🪙', stars:99,  titleKey:'sku_coins_small_t', subKey:'sku_coins_small_s' },
+  coins_big:     { ic:'💰', stars:399, titleKey:'sku_coins_big_t',   subKey:'sku_coins_big_s' },
+  coins_mega:    { ic:'🏆', stars:750, titleKey:'sku_coins_mega_t',  subKey:'sku_coins_mega_s' },
+  starter_pack:  { ic:'🎁', stars:199, titleKey:'sku_starter_t',     subKey:'sku_starter_s', featured:true },
+  revive:        { ic:'❤️', stars:30,  titleKey:'sku_revive_t',      subKey:'sku_revive_s' },
+  shuffle_pack:  { ic:'🔀', stars:60,  titleKey:'sku_shuf_t',        subKey:'sku_shuf_s' },
+  wild_pack:     { ic:'🃏', stars:60,  titleKey:'sku_wild_t',        subKey:'sku_wild_s' },
+  undo_pack:     { ic:'↶',  stars:50,  titleKey:'sku_undo_t',        subKey:'sku_undo_s' },
+  streak_shield: { ic:'🛡️', stars:99, titleKey:'sku_shield_t',      subKey:'sku_shield_s' },
+  skin_royal:    { ic:'👑', stars:150, titleKey:'sku_skin_royal_t',  subKey:'sku_skin_royal_s' },
+  skin_forest:   { ic:'🌲', stars:150, titleKey:'sku_skin_forest_t', subKey:'sku_skin_forest_s' },
+  battle_pass:   { ic:'🎖️', stars:500, titleKey:'sku_bp_t',          subKey:'sku_bp_s' }
+};
+const CHEST_REWARDS = [25, 50, 75, 100, 150, 250, 500];
+const SUITS = ['♠','♥','♦','♣'];
+const SUIT_COLOR = { '♠':'#1a0b2e', '♣':'#1a0b2e', '♥':'#c92f4d', '♦':'#c92f4d' };
+const RANK_LABEL = ['','A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+const THEMES = {
+  classic: { feltA:'rgba(255,255,255,.02)', feltB:'rgba(0,0,0,.18)' },
+  royal:   { feltA:'rgba(255,209,102,.06)', feltB:'rgba(0,0,0,.25)' },
+  forest:  { feltA:'rgba(6,214,160,.06)',   feltB:'rgba(0,0,0,.22)' }
+};
+
+/* ============== [JS-02] i18n ============== */
+const STRINGS = {
+  en: {
+    tab_shop:'Shop', tab_play:'Play', tab_earn:'Earn',
+    quest_map:'Quest Map', three_peaks_sub:'Three peaks. Endless combos.',
+    play_level:'Play Level {n}', level:'Level {n}',
+    target:'Target', score:'Score', stars:'Stars', coins:'Coins',
+    win_title:'Cleared!', lose_title:'Out of cards',
+    win_sub:'Glorious chain work.', lose_sub:'Want one more shot?',
+    btn_next:'Next', btn_retry:'Retry', btn_map:'Map', btn_revive:'Revive',
+    welcome_t:'Welcome to Solitaire Quest', welcome_s:'Three peaks. Endless combos. Tap cards ±1 from the waste card to chain them up.',
+    ftue1_t:'Match ±1', ftue1_b:'Tap any card whose rank is one above or below the waste card. Suit does not matter.',
+    ftue2_t:'Wrap around', ftue2_b:'Ace connects to King and Two. Long chains feel magical.',
+    ftue3_t:'Combo it up', ftue3_b:'Each tap adds to your streak. 3 in a row = x2 score. 10 in a row = x10.',
+    ftue4_t:'Draw from stock', ftue4_b:'Tap the stock when stuck — it breaks your combo, so chain hard first.',
+    ftue5_t:'Earn stars', ftue5_b:'Beat the score target to win. Score more to earn 2 or 3 stars and unlock crates.',
+    booster_wild:'Wild', booster_shuffle:'Shuffle', booster_undo:'Undo',
+    armed_tap_card:'Tap a card to use', armed_tap_waste:'Tap waste to swap with a wild',
+    not_enough:'Not enough!', no_undo:'Nothing to undo', no_match:'No legal play',
+    new_record:'New best!', combo_break:'combo break',
+    sku_coins_small_t:'Coin Bag', sku_coins_small_s:'1,200 coins',
+    sku_coins_big_t:'Big Sack', sku_coins_big_s:'5,400 coins',
+    sku_coins_mega_t:'Mega Chest', sku_coins_mega_s:'12,000 coins',
+    sku_starter_t:'Starter Pack', sku_starter_s:'1,500 coins + 3 wilds + 3 shuffles + 5 undos + Royal skin',
+    sku_revive_t:'Revive', sku_revive_s:'One extra life',
+    sku_shuf_t:'Shuffle Pack', sku_shuf_s:'5 shuffles',
+    sku_wild_t:'Wild Pack', sku_wild_s:'5 wild cards',
+    sku_undo_t:'Undo Pack', sku_undo_s:'7 undos',
+    sku_shield_t:'Streak Shield', sku_shield_s:'Protect streak 7 days',
+    sku_skin_royal_t:'Royal Skin', sku_skin_royal_s:'Gold felt + crown back',
+    sku_skin_forest_t:'Forest Skin', sku_skin_forest_s:'Mint felt + ivy back',
+    sku_bp_t:'Battle Pass', sku_bp_s:'30 days · 2× rewards',
+    shop_featured:'Best Value', shop_packs:'Coin Packs', shop_boosters:'Boosters', shop_skins:'Themes', shop_other:'More',
+    bp_active:'Battle Pass active · {n}d', bp_inactive:'Activate Battle Pass',
+    chest_title:'Daily Login Chest', chest_claim:'Claim Day {n}', chest_claimed:'Claimed · come back tomorrow',
+    miss_title:'Daily Missions',
+    miss_play3:'Play 3 levels today', miss_play3_sub:'Auto on level finish',
+    miss_chain5:'Get a 5-chain', miss_chain5_sub:'Auto on chain',
+    miss_share:'Share with a friend', miss_share_sub:'Tap to share',
+    miss_follow:'Follow our channel', miss_follow_sub:'Tap to open',
+    miss_streak7:'Reach a 7-day streak', miss_streak7_sub:'Auto on streak day 7',
+    mission_go:'GO', mission_check:'CHECK', mission_claim:'CLAIM', mission_done:'DONE',
+    lb_title:'Top Players',
+    settings:'Settings', sound:'Sound', haptics:'Haptics', language:'Language', skin:'Table Skin',
+    privacy:'Privacy Policy', terms:'Terms of Use', how_to_play:'🎓 How to Play',
+    confirm_leave_t:'Leave level?', confirm_leave_s:'Your progress on this level will be lost.',
+    btn_leave:'Leave', btn_stay:'Stay',
+    iap_unavail:'Purchases unavailable — open inside Telegram.',
+    iap_thanks:'Thanks! Reward delivered.',
+    locked:'Locked', unlock_at_stars:'Unlock with {n} ⭐',
+    coming_soon:'More worlds coming soon!',
+    lvl_complete:'Level Complete', lvl_failed:'Almost!',
+    bonus:'Bonus', total:'Total', stock_left:'Stock left',
+    combo_nice:'NICE!', combo_great:'GREAT!', combo_amazing:'AMAZING!', combo_incredible:'INCREDIBLE!',
+    intro_lock:'New: Locked Cards. Clear neighbors to unlock them.',
+    intro_mult:'New: Multiplier Cards. Gold tiles double your score.',
+    intro_treasure:'New: Treasure Cards. Coin tiles drop bonus coins.',
+    intro_wild:'New: Wild Stock. Some stock cards match anything.',
+    intro_memory:'New: Memory Pieces. Reveal hidden pieces to complete a postcard.'
+  },
+  ru: {
+    tab_shop:'Магазин', tab_play:'Игра', tab_earn:'Награды',
+    quest_map:'Карта приключений', three_peaks_sub:'Три пика. Бесконечные комбо.',
+    play_level:'Уровень {n}', level:'Уровень {n}',
+    target:'Цель', score:'Очки', stars:'Звёзды', coins:'Монеты',
+    win_title:'Чисто!', lose_title:'Карты кончились',
+    win_sub:'Великолепная цепочка!', lose_sub:'Ещё одна попытка?',
+    btn_next:'Дальше', btn_retry:'Заново', btn_map:'Карта', btn_revive:'Возродить',
+    welcome_t:'Добро пожаловать в Solitaire Quest', welcome_s:'Три пика. Бесконечные комбо. Касайся карт на ±1 от карты в отбое, чтобы строить цепочки.',
+    ftue1_t:'Совпадение ±1', ftue1_b:'Касайся карты, чей ранг на 1 больше или меньше карты в отбое. Масть не важна.',
+    ftue2_t:'Замкнутый круг', ftue2_b:'Туз связывает Короля и Двойку. Длинные цепочки — это магия.',
+    ftue3_t:'Стройте комбо', ftue3_b:'Каждое касание — плюс к серии. 3 подряд — x2 к очкам. 10 подряд — x10.',
+    ftue4_t:'Колода-резерв', ftue4_b:'Если ход не находится — снимай карту из колоды. Серия сбросится, поэтому копи цепочки заранее.',
+    ftue5_t:'Заработай звёзды', ftue5_b:'Дойди до цели по очкам — выиграй. Превыси её — получи 2 или 3 звезды.',
+    booster_wild:'Джокер', booster_shuffle:'Перемешать', booster_undo:'Отмена',
+    armed_tap_card:'Коснись карты, чтобы применить', armed_tap_waste:'Коснись отбоя, чтобы заменить на джокера',
+    not_enough:'Недостаточно!', no_undo:'Нечего отменять', no_match:'Нет хода',
+    new_record:'Новый рекорд!', combo_break:'серия сброшена',
+    sku_coins_small_t:'Мешочек монет', sku_coins_small_s:'1 200 монет',
+    sku_coins_big_t:'Большой кошель', sku_coins_big_s:'5 400 монет',
+    sku_coins_mega_t:'Мега-сундук', sku_coins_mega_s:'12 000 монет',
+    sku_starter_t:'Стартовый набор', sku_starter_s:'1 500 монет + 3 джокера + 3 перемешивания + 5 отмен + скин Royal',
+    sku_revive_t:'Возрождение', sku_revive_s:'+1 жизнь',
+    sku_shuf_t:'Перемешивания', sku_shuf_s:'5 перемешиваний',
+    sku_wild_t:'Джокеры', sku_wild_s:'5 джокеров',
+    sku_undo_t:'Отмены', sku_undo_s:'7 отмен',
+    sku_shield_t:'Щит серии', sku_shield_s:'Защита серии на 7 дней',
+    sku_skin_royal_t:'Скин Royal', sku_skin_royal_s:'Золотое сукно',
+    sku_skin_forest_t:'Скин Forest', sku_skin_forest_s:'Мятное сукно',
+    sku_bp_t:'Боевой пропуск', sku_bp_s:'30 дней · x2 награды',
+    shop_featured:'Лучшая цена', shop_packs:'Монеты', shop_boosters:'Бустеры', shop_skins:'Скины', shop_other:'Ещё',
+    bp_active:'Боевой пропуск · {n}д', bp_inactive:'Активировать',
+    chest_title:'Ежедневный сундук', chest_claim:'День {n}', chest_claimed:'Получено · приходи завтра',
+    miss_title:'Ежедневные задания',
+    miss_play3:'Сыграй 3 уровня сегодня', miss_play3_sub:'Авто',
+    miss_chain5:'Сделай цепочку из 5', miss_chain5_sub:'Авто',
+    miss_share:'Поделись с другом', miss_share_sub:'Нажми, чтобы поделиться',
+    miss_follow:'Подпишись на канал', miss_follow_sub:'Нажми, чтобы открыть',
+    miss_streak7:'Достигни серии 7 дней', miss_streak7_sub:'Авто',
+    mission_go:'ВПЕРЁД', mission_check:'ПРОВЕРИТЬ', mission_claim:'ПОЛУЧИТЬ', mission_done:'ГОТОВО',
+    lb_title:'Лидеры',
+    settings:'Настройки', sound:'Звук', haptics:'Вибро', language:'Язык', skin:'Скин стола',
+    privacy:'Политика', terms:'Условия', how_to_play:'🎓 Как играть',
+    confirm_leave_t:'Выйти из уровня?', confirm_leave_s:'Прогресс на уровне сбросится.',
+    btn_leave:'Выйти', btn_stay:'Остаться',
+    iap_unavail:'Покупки недоступны — открой в Telegram.',
+    iap_thanks:'Спасибо! Награда выдана.',
+    locked:'Заблокировано', unlock_at_stars:'Откроется за {n} ⭐',
+    coming_soon:'Скоро новые миры!',
+    lvl_complete:'Уровень пройден', lvl_failed:'Чуть-чуть!',
+    bonus:'Бонус', total:'Итого', stock_left:'Остаток',
+    combo_nice:'КЛАСС!', combo_great:'ОТЛИЧНО!', combo_amazing:'ВАУ!', combo_incredible:'НЕВЕРОЯТНО!',
+    intro_lock:'Новое: Запертые карты. Очисти соседей, чтобы открыть.',
+    intro_mult:'Новое: Множители. Золотые тайлы удваивают очки.',
+    intro_treasure:'Новое: Сокровища. Сундучки дают бонусные монеты.',
+    intro_wild:'Новое: Дикие в колоде. Некоторые карты-резерва подойдут к любой.',
+    intro_memory:'Новое: Фрагменты воспоминаний. Открой их и собери открытку.'
+  },
+  es: { tab_shop:'Tienda', tab_play:'Jugar', tab_earn:'Premios', quest_map:'Mapa', play_level:'Nivel {n}', welcome_t:'Bienvenido', combo_nice:'GENIAL!', combo_great:'GRANDE!', combo_amazing:'INCREÍBLE!', combo_incredible:'BRUTAL!' },
+  pt: { tab_shop:'Loja', tab_play:'Jogar', tab_earn:'Recompensas', quest_map:'Mapa', play_level:'Nível {n}', welcome_t:'Bem-vindo', combo_nice:'BOM!', combo_great:'ÓTIMO!', combo_amazing:'INCRÍVEL!', combo_incredible:'INACREDITÁVEL!' },
+  fr: { tab_shop:'Boutique', tab_play:'Jouer', tab_earn:'Récompenses', quest_map:'Carte', play_level:'Niveau {n}', welcome_t:'Bienvenue', combo_nice:'SUPER!', combo_great:'GÉNIAL!', combo_amazing:'INCROYABLE!', combo_incredible:'EXTRAORDINAIRE!' },
+  de: { tab_shop:'Shop', tab_play:'Spielen', tab_earn:'Belohnungen', quest_map:'Karte', play_level:'Level {n}', welcome_t:'Willkommen', combo_nice:'GUT!', combo_great:'KLASSE!', combo_amazing:'GENIAL!', combo_incredible:'UNGLAUBLICH!' },
+  uk: { tab_shop:'Магазин', tab_play:'Гра', tab_earn:'Нагороди', quest_map:'Карта', play_level:'Рівень {n}', welcome_t:'Вітаємо', combo_nice:'КРУТО!', combo_great:'ВІДМІННО!', combo_amazing:'НЕЙМОВІРНО!', combo_incredible:'НЕРЕАЛЬНО!' },
+  nl: { tab_shop:'Winkel', tab_play:'Spelen', tab_earn:'Beloningen', quest_map:'Kaart', play_level:'Level {n}' },
+  it: { tab_shop:'Negozio', tab_play:'Gioca', tab_earn:'Premi', quest_map:'Mappa', play_level:'Livello {n}' },
+  sv: { tab_shop:'Butik', tab_play:'Spela', tab_earn:'Belöningar', quest_map:'Karta', play_level:'Nivå {n}' },
+  pl: { tab_shop:'Sklep', tab_play:'Graj', tab_earn:'Nagrody', quest_map:'Mapa', play_level:'Poziom {n}' },
+  tr: { tab_shop:'Mağaza', tab_play:'Oyna', tab_earn:'Ödüller', quest_map:'Harita', play_level:'Seviye {n}' },
+  ar: { tab_shop:'المتجر', tab_play:'العب', tab_earn:'المكافآت', quest_map:'الخريطة', play_level:'المستوى {n}' },
+  he: { tab_shop:'חנות', tab_play:'שחק', tab_earn:'פרסים', quest_map:'מפה', play_level:'שלב {n}' },
+  hi: { tab_shop:'दुकान', tab_play:'खेलें', tab_earn:'इनाम', quest_map:'मानचित्र', play_level:'स्तर {n}' },
+  id: { tab_shop:'Toko', tab_play:'Main', tab_earn:'Hadiah', quest_map:'Peta', play_level:'Level {n}' },
+  vi: { tab_shop:'Cửa hàng', tab_play:'Chơi', tab_earn:'Phần thưởng', quest_map:'Bản đồ', play_level:'Cấp {n}' },
+  zh: { tab_shop:'商店', tab_play:'开始', tab_earn:'奖励', quest_map:'地图', play_level:'第{n}关' },
+  ko: { tab_shop:'상점', tab_play:'플레이', tab_earn:'보상', quest_map:'지도', play_level:'레벨 {n}' },
+  ja: { tab_shop:'ショップ', tab_play:'プレイ', tab_earn:'リワード', quest_map:'マップ', play_level:'レベル {n}' }
+};
+const SUPPORTED_LANGS = Object.keys(STRINGS);
+const RTL_LANGS = ['ar','he'];
+function t(key, params) {
+  const lang = state.settings.lang || 'en';
+  let s = (STRINGS[lang] && STRINGS[lang][key]) || STRINGS.en[key] || key;
+  if (params) for (const k of Object.keys(params)) s = s.replace('{' + k + '}', params[k]);
+  return s;
+}
+
+/* ============== [JS-03] STATE + PERSISTENCE ============== */
+const LS_KEY = 'solitaire-quest.v1';
+const DEFAULT_STATE = {
+  v: VERSION,
+  uid: null, handle: '',
+  settings: { lang:'en', sound:true, haptics:true, theme:'classic' },
+  coins: 100,
+  stars: 0,
+  level: 1,
+  maxLevelUnlocked: 1,
+  streak: 0,
+  lastPlayedYMD: '',
+  shieldUntil: 0,
+  battlePassUntil: 0,
+  boosters: { wild: 2, shuffle: 2, undo: 3, revive: 1 },
+  ownedSkins: ['classic'],
+  starsPerLevel: {},
+  bestScorePerLevel: {},
+  welcomed: false, ftueDone: false,
+  chestDay: 1, chestClaimedYMD: '',
+  missions: {},
+  gamesPlayedToday: 0, gamesPlayedYMD: '',
+  totalGames: 0, totalChains5: 0, bigChainSeen: false,
+  introsSeen: {},      // lock/mult/treasure/wild/memory
+  memoryPieces: 0,
+  activeTab: 'play'
+};
+let state = loadState();
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return JSON.parse(JSON.stringify(DEFAULT_STATE));
+    const s = JSON.parse(raw);
+    // shallow merge with defaults so new fields don't crash
+    const merged = JSON.parse(JSON.stringify(DEFAULT_STATE));
+    for (const k of Object.keys(s)) merged[k] = s[k];
+    for (const k of Object.keys(DEFAULT_STATE.settings || {})) if (merged.settings[k] === undefined) merged.settings[k] = DEFAULT_STATE.settings[k];
+    for (const k of Object.keys(DEFAULT_STATE.boosters || {})) if (merged.boosters[k] === undefined) merged.boosters[k] = DEFAULT_STATE.boosters[k];
+    if (!merged.introsSeen) merged.introsSeen = {};
+    return merged;
+  } catch (e) { return JSON.parse(JSON.stringify(DEFAULT_STATE)); }
+}
+function saveState() {
+  try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch {}
+}
+function ymd(d) { d = d || new Date(); return d.toISOString().slice(0,10); }
+
+/* ============== [JS-04] TELEGRAM ============== */
+const TG = (typeof window !== 'undefined' && window.Telegram && window.Telegram.WebApp) ? window.Telegram.WebApp : null;
+function initTelegram() {
+  if (!TG) return;
+  try {
+    TG.ready();
+    TG.expand();
+    if (TG.disableVerticalSwipes) TG.disableVerticalSwipes();
+    if (TG.setHeaderColor) TG.setHeaderColor('#1a0b2e');
+    if (TG.setBackgroundColor) TG.setBackgroundColor('#1a0b2e');
+    const u = TG.initDataUnsafe?.user;
+    if (u) {
+      state.uid = String(u.id);
+      state.handle = u.username || u.first_name || '';
+      if (!state.settings.lang || state.settings.lang === 'en') {
+        const lc = (u.language_code || '').slice(0,2).toLowerCase();
+        if (SUPPORTED_LANGS.includes(lc)) state.settings.lang = lc;
+      }
+    }
+    applyTelegramSafeArea();
+    if (TG.onEvent) TG.onEvent('viewportChanged', applyTelegramSafeArea);
+  } catch (e) { console.warn('TG init', e); }
+}
+function applyTelegramSafeArea() {
+  let top = 0, bottom = 0;
+  try {
+    if (TG?.contentSafeAreaInset) { top = TG.contentSafeAreaInset.top|0; bottom = TG.contentSafeAreaInset.bottom|0; }
+    if (!top && TG?.safeAreaInset) top = TG.safeAreaInset.top|0;
+  } catch {}
+  document.documentElement.style.setProperty('--safe-top', top + 'px');
+  document.documentElement.style.setProperty('--safe-bottom', bottom + 'px');
+}
+function haptic(kind) {
+  if (!state.settings.haptics) return;
+  try {
+    if (TG?.HapticFeedback) {
+      if (kind === 'impact') TG.HapticFeedback.impactOccurred('light');
+      else if (kind === 'heavy') TG.HapticFeedback.impactOccurred('medium');
+      else if (kind === 'success') TG.HapticFeedback.notificationOccurred('success');
+      else if (kind === 'warn') TG.HapticFeedback.notificationOccurred('warning');
+      else if (kind === 'err') TG.HapticFeedback.notificationOccurred('error');
+    }
+  } catch {}
+}
+
+/* ============== [JS-05] PRNG + UTILS ============== */
+function mulberry32(seed) {
+  return function() {
+    let t = (seed += 0x6D2B79F5) | 0;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function shuffle(arr, rng) {
+  rng = rng || Math.random;
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+function clamp(v,a,b){ return v<a?a:v>b?b:v; }
+function lerp(a,b,t){ return a+(b-a)*t; }
+function easeOutCubic(t){ t = clamp(t,0,1); const f = 1 - t; return 1 - f*f*f; }
+function easeOutBack(t){ const c = 1.70158; const f = t - 1; return 1 + (c+1)*f*f*f + c*f*f; }
+function rand(a,b){ return a + Math.random()*(b-a); }
+
+/* ============== [JS-06] LEVEL DEFINITIONS ============== */
+/* Each level has a layout function generating relative card positions, plus modifiers.
+   Coordinates are normalized: x in [0..1] across playable width, y in [0..1] downward.
+   The render layer maps these to canvas pixels with safe padding.
+*/
+const LAYOUTS = {
+  tripeak3(opts) {
+    // 28 cards: 3 peaks + 6 + 9 + 10
+    const out = [];
+    // y rows (top to bottom)
+    const rows = [0.06, 0.20, 0.34, 0.48];
+    const peakXs = [0.18, 0.50, 0.82];
+    let id = 0;
+    // peaks (layer 0)
+    peakXs.forEach((px,i) => out.push({ id:id++, x:px, y:rows[0], layer:0, faceDown:false, peakIndex:i }));
+    // layer 1: 2 cards under each peak
+    peakXs.forEach((px,i) => {
+      out.push({ id:id++, x:px-0.06, y:rows[1], layer:1, faceDown:true });
+      out.push({ id:id++, x:px+0.06, y:rows[1], layer:1, faceDown:true });
+    });
+    // layer 2: 3 cards under each peak (sharing edges between peaks)
+    peakXs.forEach((px,i) => {
+      out.push({ id:id++, x:px-0.10, y:rows[2], layer:2, faceDown:true });
+      out.push({ id:id++, x:px,      y:rows[2], layer:2, faceDown:true });
+      out.push({ id:id++, x:px+0.10, y:rows[2], layer:2, faceDown:true });
+    });
+    // layer 3: bottom row of 10 cards spanning across
+    for (let i = 0; i < 10; i++) {
+      out.push({ id:id++, x:0.08 + i*0.092, y:rows[3], layer:3, faceDown:false });
+    }
+    return out;
+  },
+  diamond(opts) {
+    // 24 cards in diamond shape: rows of 1,3,5,5,5,3,1 with overlap = 24
+    const out = [];
+    const ys = [0.04, 0.14, 0.24, 0.34, 0.44];
+    const widths = [1, 3, 5, 4, 3];
+    let id = 0;
+    ys.forEach((y, row) => {
+      const w = widths[row];
+      const layer = ys.length - 1 - row;
+      const startX = 0.5 - (w - 1) * 0.07;
+      for (let i = 0; i < w; i++) {
+        out.push({ id:id++, x: startX + i * 0.14, y, layer, faceDown: row > 0 && row < ys.length - 1 });
+      }
+    });
+    return out;
+  },
+  twinPeak(opts) {
+    // two pyramids, 20 cards
+    const out = [];
+    let id = 0;
+    const peakXs = [0.28, 0.72];
+    const rows = [0.08, 0.22, 0.36, 0.50];
+    peakXs.forEach(px => {
+      out.push({ id:id++, x:px, y:rows[0], layer:0, faceDown:false });
+      out.push({ id:id++, x:px-0.06, y:rows[1], layer:1, faceDown:true });
+      out.push({ id:id++, x:px+0.06, y:rows[1], layer:1, faceDown:true });
+      out.push({ id:id++, x:px-0.10, y:rows[2], layer:2, faceDown:true });
+      out.push({ id:id++, x:px,      y:rows[2], layer:2, faceDown:true });
+      out.push({ id:id++, x:px+0.10, y:rows[2], layer:2, faceDown:true });
+    });
+    for (let i = 0; i < 8; i++) {
+      out.push({ id:id++, x: 0.12 + i * 0.108, y: rows[3], layer:3, faceDown:false });
+    }
+    return out;
+  },
+  fan(opts) {
+    // crescent fan, 22 cards in arc
+    const out = [];
+    const N = 22;
+    let id = 0;
+    for (let i = 0; i < N; i++) {
+      const t = i / (N - 1);
+      const angle = -Math.PI * 0.85 + t * Math.PI * 0.7;
+      const r = 0.42;
+      const x = 0.5 + Math.cos(angle) * r;
+      const y = 0.50 + Math.sin(angle) * r * 0.7;
+      const layer = (i < 4 || i > N - 5) ? 0 : (i % 3 === 0 ? 1 : 2);
+      out.push({ id:id++, x, y, layer, faceDown: layer >= 2 });
+    }
+    return out;
+  },
+  ring(opts) {
+    // ring of 16 cards around a 4-card center
+    const out = [];
+    let id = 0;
+    const N = 16;
+    for (let i = 0; i < N; i++) {
+      const a = (i / N) * Math.PI * 2 - Math.PI / 2;
+      const x = 0.5 + Math.cos(a) * 0.34;
+      const y = 0.28 + Math.sin(a) * 0.22;
+      out.push({ id:id++, x, y, layer:0, faceDown:false });
+    }
+    // center cluster (4 cards stacked)
+    out.push({ id:id++, x:0.42, y:0.30, layer:1, faceDown:true });
+    out.push({ id:id++, x:0.58, y:0.30, layer:1, faceDown:true });
+    out.push({ id:id++, x:0.50, y:0.20, layer:1, faceDown:true });
+    out.push({ id:id++, x:0.50, y:0.40, layer:1, faceDown:true });
+    return out;
+  },
+  pyramid(opts) {
+    // single 5-row pyramid (Pyramid solitaire shape), 15 cards
+    const out = [];
+    let id = 0;
+    for (let row = 0; row < 5; row++) {
+      const w = row + 1;
+      const layer = 4 - row;
+      const startX = 0.5 - (w - 1) * 0.07;
+      for (let i = 0; i < w; i++) {
+        out.push({ id:id++, x: startX + i * 0.14, y: 0.08 + row * 0.10, layer, faceDown: row < 4 });
+      }
+    }
+    // extra base row for play surface
+    for (let i = 0; i < 9; i++) {
+      out.push({ id:id++, x: 0.08 + i * 0.105, y: 0.62, layer:9, faceDown:false });
+    }
+    return out;
+  },
+  crown(opts) {
+    // 5 short towers on a base, ~24 cards
+    const out = [];
+    let id = 0;
+    const towerXs = [0.16, 0.32, 0.50, 0.68, 0.84];
+    towerXs.forEach((tx, i) => {
+      const h = (i === 2) ? 4 : (i % 2 === 0 ? 2 : 3);
+      for (let r = 0; r < h; r++) {
+        out.push({ id:id++, x:tx, y:0.10 + (h - 1 - r) * 0.08, layer:r, faceDown:r < h - 1 });
+      }
+    });
+    for (let i = 0; i < 10; i++) {
+      out.push({ id:id++, x: 0.08 + i * 0.093, y: 0.55, layer:9, faceDown:false });
+    }
+    return out;
+  },
+  hourglass(opts) {
+    // wide top, narrow middle, wide bottom; 22 cards
+    const out = [];
+    let id = 0;
+    const rows = [
+      { y:0.06, n:6, layer:0 },
+      { y:0.18, n:4, layer:1 },
+      { y:0.30, n:2, layer:2 },
+      { y:0.42, n:4, layer:1 },
+      { y:0.54, n:6, layer:0 }
+    ];
+    rows.forEach(r => {
+      const startX = 0.5 - (r.n - 1) * 0.07;
+      for (let i = 0; i < r.n; i++) {
+        out.push({ id:id++, x:startX + i*0.14, y:r.y, layer:r.layer, faceDown:r.layer >= 1 });
+      }
+    });
+    return out;
+  },
+  wave(opts) {
+    // sine wave, 18 cards across 2 rows
+    const out = [];
+    let id = 0;
+    const N = 9;
+    for (let i = 0; i < N; i++) {
+      const t = i / (N - 1);
+      const x = 0.08 + t * 0.84;
+      const y1 = 0.20 + Math.sin(t * Math.PI * 2) * 0.10;
+      const y2 = 0.40 + Math.sin(t * Math.PI * 2 + Math.PI) * 0.10;
+      out.push({ id:id++, x, y:y1, layer: (i%2===0)?1:0, faceDown: (i%2===0) });
+      out.push({ id:id++, x, y:y2, layer: (i%2===1)?1:0, faceDown: (i%2===1) });
+    }
+    return out;
+  },
+  butterfly(opts) {
+    // two diamond wings + central body, 24 cards
+    const out = [];
+    let id = 0;
+    // left wing
+    const wingL = [
+      [0.10,0.10],[0.18,0.16],[0.26,0.22],[0.18,0.28],[0.10,0.34],
+      [0.22,0.40],[0.14,0.46]
+    ];
+    wingL.forEach((p,i) => out.push({ id:id++, x:p[0], y:p[1], layer:i<2?0:1, faceDown:i>=2 }));
+    // right wing
+    const wingR = [
+      [0.90,0.10],[0.82,0.16],[0.74,0.22],[0.82,0.28],[0.90,0.34],
+      [0.78,0.40],[0.86,0.46]
+    ];
+    wingR.forEach((p,i) => out.push({ id:id++, x:p[0], y:p[1], layer:i<2?0:1, faceDown:i>=2 }));
+    // body
+    for (let i = 0; i < 5; i++) {
+      out.push({ id:id++, x:0.50, y:0.10 + i*0.10, layer:0, faceDown:false });
+    }
+    // base row
+    for (let i = 0; i < 5; i++) {
+      out.push({ id:id++, x:0.30 + i*0.10, y:0.62, layer:5, faceDown:false });
+    }
+    return out;
+  },
+  castle(opts) {
+    // central tower + flanking towers + ramparts, ~24 cards
+    const out = [];
+    let id = 0;
+    // central tower (5 high)
+    for (let r = 0; r < 5; r++) out.push({ id:id++, x:0.50, y:0.06+(4-r)*0.08, layer:r, faceDown:r<4 });
+    // left tower (3)
+    for (let r = 0; r < 3; r++) out.push({ id:id++, x:0.28, y:0.14+(2-r)*0.08, layer:r, faceDown:r<2 });
+    // right tower
+    for (let r = 0; r < 3; r++) out.push({ id:id++, x:0.72, y:0.14+(2-r)*0.08, layer:r, faceDown:r<2 });
+    // ramparts (left and right)
+    for (let i = 0; i < 3; i++) out.push({ id:id++, x:0.10 + i*0.06, y:0.42, layer:0, faceDown:false });
+    for (let i = 0; i < 3; i++) out.push({ id:id++, x:0.78 + i*0.06, y:0.42, layer:0, faceDown:false });
+    // base
+    for (let i = 0; i < 9; i++) out.push({ id:id++, x:0.08 + i*0.105, y:0.55, layer:9, faceDown:false });
+    return out;
+  },
+  heart(opts) {
+    // heart shape using parametric curve, 20 cards
+    const out = [];
+    let id = 0;
+    const N = 20;
+    for (let i = 0; i < N; i++) {
+      const t = i / N * Math.PI * 2;
+      const sx = 16 * Math.pow(Math.sin(t), 3);
+      const sy = -(13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t));
+      const x = 0.5 + sx / 40;
+      const y = 0.30 + sy / 40;
+      const layer = (i % 3 === 0) ? 0 : 1;
+      out.push({ id:id++, x, y, layer, faceDown: layer === 1 });
+    }
+    return out;
+  },
+  snowflake(opts) {
+    // 6-fold star, 24 cards
+    const out = [];
+    let id = 0;
+    out.push({ id:id++, x:0.5, y:0.30, layer:0, faceDown:false });
+    for (let arm = 0; arm < 6; arm++) {
+      const ang = (arm / 6) * Math.PI * 2;
+      for (let i = 1; i <= 3; i++) {
+        const r = i * 0.10;
+        const x = 0.5 + Math.cos(ang) * r;
+        const y = 0.30 + Math.sin(ang) * r * 0.75;
+        out.push({ id:id++, x, y, layer: i === 3 ? 0 : 1, faceDown: i < 3 });
+      }
+    }
+    // bottom row
+    for (let i = 0; i < 5; i++) out.push({ id:id++, x:0.20+i*0.15, y:0.62, layer:5, faceDown:false });
+    return out;
+  },
+  tree(opts) {
+    // christmas-tree triangles stacked, 26 cards
+    const out = [];
+    let id = 0;
+    const tiers = [ {y:0.06,n:1}, {y:0.14,n:3}, {y:0.22,n:5}, {y:0.30,n:7}, {y:0.40,n:5}, {y:0.50,n:3} ];
+    tiers.forEach((tr, ti) => {
+      const startX = 0.5 - (tr.n - 1) * 0.07;
+      for (let i = 0; i < tr.n; i++) {
+        out.push({ id:id++, x:startX + i*0.14, y:tr.y, layer:tiers.length-1-ti, faceDown: ti > 0 && ti < tiers.length - 1 });
+      }
+    });
+    // trunk
+    out.push({ id:id++, x:0.46, y:0.58, layer:0, faceDown:false });
+    out.push({ id:id++, x:0.54, y:0.58, layer:0, faceDown:false });
+    return out;
+  },
+  star(opts) {
+    // 5-point star, 25 cards
+    const out = [];
+    let id = 0;
+    out.push({ id:id++, x:0.5, y:0.28, layer:0, faceDown:false });
+    for (let i = 0; i < 10; i++) {
+      const a = (i / 10) * Math.PI * 2 - Math.PI / 2;
+      const r = (i % 2 === 0) ? 0.18 : 0.09;
+      const x = 0.5 + Math.cos(a) * r;
+      const y = 0.28 + Math.sin(a) * r * 0.85;
+      out.push({ id:id++, x, y, layer: (i%2===0) ? 0 : 1, faceDown: (i%2===1) });
+    }
+    // base + ramp
+    for (let i = 0; i < 8; i++) out.push({ id:id++, x:0.10+i*0.11, y:0.56, layer:0, faceDown:false });
+    for (let i = 0; i < 6; i++) out.push({ id:id++, x:0.18+i*0.13, y:0.66, layer:0, faceDown:false });
+    return out;
+  }
+};
+
+const LEVELS = [
+  { id:1,  layout:'tripeak3',  stock:24, par:3500, gold:6000, perfect:9000,  flavor:'first_peaks' },
+  { id:2,  layout:'tripeak3',  stock:22, par:4500, gold:7500, perfect:11000, flavor:'second_run' },
+  { id:3,  layout:'pyramid',   stock:22, par:4000, gold:7000, perfect:10000, flavor:'rising_sun' },
+  { id:4,  layout:'twinPeak',  stock:22, par:5000, gold:8500, perfect:12500, flavor:'twin_pines', intro:'lock', mods:{ lockCount:2 } },
+  { id:5,  layout:'diamond',   stock:20, par:5500, gold:9000, perfect:13000, mods:{ lockCount:2 } },
+  { id:6,  layout:'fan',       stock:22, par:6000, gold:10000, perfect:14000, mods:{ lockCount:2 } },
+  { id:7,  layout:'ring',      stock:20, par:6500, gold:11000, perfect:15000, intro:'mult', mods:{ multCount:2, lockCount:1 } },
+  { id:8,  layout:'crown',     stock:22, par:7000, gold:12000, perfect:17000, mods:{ multCount:2, lockCount:2 } },
+  { id:9,  layout:'hourglass', stock:20, par:7500, gold:13000, perfect:18000, mods:{ multCount:3, lockCount:2 } },
+  { id:10, layout:'wave',      stock:22, par:8000, gold:14000, perfect:19000, intro:'treasure', mods:{ treasureCount:3, multCount:1 } },
+  { id:11, layout:'butterfly', stock:22, par:9000, gold:15000, perfect:20000, mods:{ treasureCount:3, multCount:2, lockCount:1 } },
+  { id:12, layout:'castle',    stock:22, par:9500, gold:16000, perfect:21500, mods:{ treasureCount:2, multCount:2, lockCount:2 } },
+  { id:13, layout:'heart',     stock:22, par:10000, gold:17000, perfect:22500, intro:'wild', mods:{ wildStock:3, treasureCount:2, multCount:2 } },
+  { id:14, layout:'snowflake', stock:22, par:11000, gold:18000, perfect:24000, mods:{ wildStock:2, treasureCount:2, multCount:3, lockCount:2 } },
+  { id:15, layout:'star',      stock:22, par:12000, gold:20000, perfect:26000, intro:'memory', mods:{ memoryPieces:3, wildStock:2, multCount:3, treasureCount:2, lockCount:2 } }
+];
+
+/* ============== [JS-07] CARD MODEL ============== */
+const Card = {
+  // rank: 1..13
+  // suit: index 0..3
+  // type: 'normal'|'locked'|'mult'|'treasure'|'memory'|'wild'
+  isMatch(rankA, rankB) {
+    if (!rankA || !rankB) return false;
+    const d = Math.abs(rankA - rankB);
+    return d === 1 || d === 12; // 12 = K(13) to A(1) wrap
+  }
+};
+
+function computeBlockers(cards) {
+  // For each card, find the cards that visually overlap it from below (next layer down toward camera).
+  // A card B blocks A if B.layer > A.layer and |B.x - A.x| < threshold and B.y > A.y - tiny.
+  // Lower layer (smaller number) = behind. Higher layer = in front.
+  // We map "in front" cards as blockers.
+  const px = (CARD_W * 0.62) / 1000; // approx fraction of cards considered overlapping; updated per render
+  for (const c of cards) c.blockers = [];
+  for (let i = 0; i < cards.length; i++) {
+    const a = cards[i];
+    for (let j = 0; j < cards.length; j++) {
+      if (i === j) continue;
+      const b = cards[j];
+      if (b.layer <= a.layer) continue;
+      // proximity threshold tuned for normalized coords (we use a generous 0.07)
+      if (Math.abs(b.x - a.x) < 0.075 && b.y - a.y >= 0 && b.y - a.y < 0.16) {
+        a.blockers.push(b.id);
+      }
+    }
+  }
+}
+
+function isPlayable(card, game) {
+  if (card.cleared) return false;
+  if (card.faceDown) return false;
+  if (card.type === 'locked' && card.lockCount > 0) return false;
+  // playable when all blockers are cleared
+  for (const bid of card.blockers) {
+    const b = game.cards.find(c => c.id === bid);
+    if (b && !b.cleared) return false;
+  }
+  return true;
+}
+
+/* ============== [JS-08] GAME ENGINE ============== */
+const game = {
+  active: false,
+  levelId: 1,
+  cards: [],
+  waste: null,
+  stock: [],
+  drawnCount: 0,
+  score: 0,
+  chain: 0,
+  multTier: 0,
+  rng: Math.random,
+  startedAt: 0,
+  finished: false,
+  won: false,
+  history: [], // {cardId, prevWaste, prevChain, prevScore}
+  fxLayer: [],
+  particles: [],
+  scorePopups: [],
+  armedBooster: null,
+  collectedTreasures: 0,
+  memoryRevealed: 0,
+  introsShownThisRun: {}
+};
+
+function startLevel(id) {
+  const def = LEVELS.find(l => l.id === id);
+  if (!def) { toast(t('coming_soon')); return; }
+  if (id > state.maxLevelUnlocked) { toast(t('locked')); return; }
+  game.active = true;
+  game.finished = false;
+  game.won = false;
+  game.levelId = id;
+  game.score = 0;
+  game.chain = 0;
+  game.multTier = 0;
+  game.armedBooster = null;
+  game.collectedTreasures = 0;
+  game.memoryRevealed = 0;
+  game.introsShownThisRun = {};
+  game.history = [];
+  game.fxLayer = [];
+  game.particles = [];
+  game.scorePopups = [];
+  game.startedAt = Date.now();
+
+  // RNG: deterministic per-level so the run is reproducible per attempt session (changes on each retry though)
+  game.rng = mulberry32((id * 9311 + Date.now() & 0xffffffff) >>> 0);
+
+  // build cards
+  const positions = LAYOUTS[def.layout]({});
+  // assign ranks/suits: use full deck then top up if more positions
+  const deck = [];
+  for (let s = 0; s < 4; s++) for (let r = 1; r <= 13; r++) deck.push({ rank: r, suit: s });
+  shuffle(deck, game.rng);
+  while (deck.length < positions.length + def.stock + 6) {
+    for (let s = 0; s < 4; s++) for (let r = 1; r <= 13; r++) deck.push({ rank: r, suit: s });
+  }
+  let cursor = 0;
+
+  game.cards = positions.map(p => {
+    const d = deck[cursor++];
+    return {
+      id: p.id,
+      x: p.x, y: p.y, layer: p.layer,
+      rank: d.rank, suit: d.suit,
+      faceDown: !!p.faceDown,
+      cleared: false,
+      type: 'normal',
+      lockCount: 0, multValue: 1,
+      anim: null
+    };
+  });
+
+  // apply modifiers (locked / mult / treasure / memory positions)
+  const mods = def.mods || {};
+  const facingUp = game.cards.filter(c => !c.faceDown).map(c => c.id);
+  const facingDown = game.cards.filter(c => c.faceDown).map(c => c.id);
+  const shuffledUp = facingUp.slice(); shuffle(shuffledUp, game.rng);
+  const shuffledDown = facingDown.slice(); shuffle(shuffledDown, game.rng);
+  let upCur = 0, dnCur = 0;
+  const takeUp = () => game.cards.find(c => c.id === shuffledUp[upCur++]);
+  const takeDown = () => game.cards.find(c => c.id === shuffledDown[dnCur++]);
+
+  if (mods.lockCount) {
+    for (let i = 0; i < mods.lockCount && i < shuffledUp.length; i++) {
+      const c = takeUp(); if (!c) break;
+      c.type = 'locked'; c.lockCount = 2;
+    }
+  }
+  if (mods.multCount) {
+    for (let i = 0; i < mods.multCount && upCur < shuffledUp.length; i++) {
+      const c = takeUp(); if (!c) break;
+      c.type = 'mult'; c.multValue = 2;
+    }
+  }
+  if (mods.treasureCount) {
+    for (let i = 0; i < mods.treasureCount && upCur < shuffledUp.length; i++) {
+      const c = takeUp(); if (!c) break;
+      c.type = 'treasure';
+    }
+  }
+  if (mods.memoryPieces) {
+    for (let i = 0; i < mods.memoryPieces && dnCur < shuffledDown.length; i++) {
+      const c = takeDown(); if (!c) break;
+      c.type = 'memory';
+    }
+  }
+
+  computeBlockers(game.cards);
+
+  // stock
+  game.stock = [];
+  for (let i = 0; i < def.stock; i++) {
+    const d = deck[cursor++] || { rank: 1 + ((Math.random()*13)|0), suit: 0 };
+    game.stock.push({ rank: d.rank, suit: d.suit, wild: false });
+  }
+  if (mods.wildStock) {
+    const idx = [];
+    for (let i = 0; i < game.stock.length; i++) idx.push(i);
+    shuffle(idx, game.rng);
+    for (let i = 0; i < mods.wildStock && i < idx.length; i++) game.stock[idx[i]].wild = true;
+  }
+  // initial waste = first stock pop
+  game.waste = game.stock.pop() || { rank: 7, suit: 0 };
+  game.drawnCount = 1;
+
+  // intro popup for new mechanic
+  const intro = def.intro;
+  if (intro && !state.introsSeen[intro]) {
+    state.introsSeen[intro] = true; saveState();
+    game.introsShownThisRun[intro] = true;
+  }
+
+  showPlayScreen();
+  layoutCanvas();
+  renderHUD();
+  mp('level_start', { level: id, layout: def.layout, par: def.par });
+  if (intro && game.introsShownThisRun[intro]) {
+    setTimeout(() => toast(t('intro_' + intro)), 350);
+  }
+}
+
+function tryPlayCard(cardId) {
+  const c = game.cards.find(x => x.id === cardId);
+  if (!c || c.cleared) return;
+  if (game.armedBooster) {
+    handleArmedBoosterOnCard(c);
+    return;
+  }
+  if (!isPlayable(c, game)) {
+    haptic('warn');
+    flashCard(c, '#ef476f');
+    return;
+  }
+  if (!Card.isMatch(c.rank, game.waste.rank) && !game.waste.wild && !c.wild) {
+    haptic('warn');
+    flashCard(c, '#ef476f');
+    return;
+  }
+  // PLAY
+  const prevWaste = { ...game.waste };
+  const prevChain = game.chain;
+  const prevScore = game.score;
+  const prevType = c.type;
+  game.history.push({ cardId: c.id, prevWaste, prevChain, prevScore, prevType, prevMult: c.multValue, prevLock: c.lockCount });
+  if (game.history.length > 20) game.history.shift();
+
+  c.cleared = true;
+  // animate to waste
+  c.anim = { kind:'toWaste', t:0, dur:280, fromX:c.x, fromY:c.y };
+  game.waste = { rank: c.rank, suit: c.suit, wild: !!c.wild };
+
+  game.chain += 1;
+  const tier = currentComboTier(game.chain);
+  game.multTier = tier;
+  const base = 50;
+  const multScore = base * COMBO_TIERS[tier].mult * (c.multValue || 1);
+  game.score += multScore;
+  spawnScorePopup(c.x, c.y, '+' + multScore + (c.multValue > 1 ? ' x' + c.multValue : ''));
+
+  if (c.type === 'treasure') {
+    state.coins += 30;
+    spawnParticles(c.x, c.y, 14, '#ffd166');
+    spawnScorePopup(c.x, c.y - 0.04, '+30 🪙');
+    saveState();
+  }
+  if (c.type === 'memory') {
+    state.memoryPieces += 1;
+    game.memoryRevealed += 1;
+    spawnParticles(c.x, c.y, 18, '#a83af0');
+    saveState();
+  }
+  if (c.type === 'mult') {
+    spawnParticles(c.x, c.y, 16, '#ffd166');
+  }
+
+  spawnParticles(c.x, c.y, 8, '#fff');
+  haptic('impact');
+  beepMatch(game.chain);
+
+  // unlock revealed cards beneath
+  setTimeout(revealCardsBeneath, 260);
+
+  // chain-of-5 mission
+  if (game.chain === 5) state.totalChains5 += 1, saveState();
+
+  // combo tier callout
+  if (tier > game.multTier - 1 && tier > 0) {
+    showComboCallout(tier);
+  }
+  renderHUD();
+  checkWin();
+}
+
+function handleArmedBoosterOnCard(c) {
+  const b = game.armedBooster;
+  if (b === 'wild') {
+    if (state.boosters.wild <= 0) { armBooster(null); return; }
+    // turn waste into wild matching this card
+    game.waste = { rank: c.rank, suit: c.suit, wild: true };
+    state.boosters.wild -= 1; saveState();
+    spawnParticles(0.5, 0.6, 24, '#ffd166');
+    armBooster(null);
+    renderHUD();
+  } else {
+    armBooster(null);
+  }
+}
+
+function revealCardsBeneath() {
+  // any face-down card whose blockers are all cleared becomes face-up + flips
+  const reveals = [];
+  for (const c of game.cards) {
+    if (c.cleared) continue;
+    if (!c.faceDown) continue;
+    let ok = true;
+    for (const bid of c.blockers) {
+      const b = game.cards.find(x => x.id === bid);
+      if (b && !b.cleared) { ok = false; break; }
+    }
+    if (ok) reveals.push(c);
+  }
+  reveals.forEach(c => {
+    c.faceDown = false;
+    c.anim = { kind:'flip', t: 0, dur: 280 };
+    // decrement lock count on neighbors if newly revealed
+  });
+  // also, every match: decrement lockCount of neighboring locked cards
+  // (treated as a generic effect — neighbors are blockers' parents or siblings of just-cleared)
+  for (const c of game.cards) {
+    if (c.cleared || c.type !== 'locked' || c.lockCount <= 0) continue;
+    // count cleared neighbors among blockers + siblings within 0.12 x and 0.12 y
+    let neighborsClearedNow = 0;
+    for (const o of game.cards) {
+      if (o === c) continue;
+      if (!o.cleared) continue;
+      if (Math.abs(o.x - c.x) < 0.13 && Math.abs(o.y - c.y) < 0.14) {
+        if (o._lockTickedFor && o._lockTickedFor.has && o._lockTickedFor.has(c.id)) continue;
+        neighborsClearedNow += 1;
+        if (!o._lockTickedFor) o._lockTickedFor = new Set();
+        o._lockTickedFor.add(c.id);
+      }
+    }
+    if (neighborsClearedNow > 0) {
+      c.lockCount = Math.max(0, c.lockCount - neighborsClearedNow);
+      if (c.lockCount === 0) {
+        spawnParticles(c.x, c.y, 12, '#ffd166');
+      }
+    }
+  }
+}
+
+function drawFromStock() {
+  if (game.stock.length === 0) {
+    toast(t('no_match'));
+    return;
+  }
+  if (game.chain > 0) flashComboBreak();
+  game.chain = 0;
+  game.multTier = 0;
+  game.history.push({ kind:'draw', prevWaste: { ...game.waste }, prevChain: game.chain, prevScore: game.score });
+  if (game.history.length > 20) game.history.shift();
+  game.waste = game.stock.pop();
+  game.drawnCount += 1;
+  haptic('impact');
+  beepDraw();
+  renderHUD();
+  checkWin();
+}
+
+function currentComboTier(chain) {
+  let tier = 0;
+  for (let i = COMBO_TIERS.length - 1; i >= 0; i--) {
+    if (chain >= COMBO_TIERS[i].chain) { tier = i; break; }
+  }
+  return tier;
+}
+
+function undo() {
+  if (state.boosters.undo <= 0) { toast(t('not_enough')); return; }
+  if (!game.history.length) { toast(t('no_undo')); return; }
+  const h = game.history.pop();
+  if (h.kind === 'draw') {
+    game.stock.push(game.waste);
+    game.waste = h.prevWaste;
+    game.chain = h.prevChain;
+    game.score = h.prevScore;
+  } else {
+    const c = game.cards.find(x => x.id === h.cardId);
+    if (c) {
+      c.cleared = false;
+      c.type = h.prevType || c.type;
+      c.multValue = h.prevMult || c.multValue;
+      c.lockCount = (h.prevLock != null) ? h.prevLock : c.lockCount;
+    }
+    game.waste = h.prevWaste;
+    game.chain = h.prevChain;
+    game.score = h.prevScore;
+    if (h.kind === 'draw' || h.prevType === 'treasure') {
+      // refund treasure coins if undo'd (simple)
+    }
+  }
+  state.boosters.undo -= 1;
+  saveState();
+  game.multTier = currentComboTier(game.chain);
+  computeBlockers(game.cards);
+  renderHUD();
+  haptic('impact');
+}
+
+function shuffleBoard() {
+  if (state.boosters.shuffle <= 0) { toast(t('not_enough')); return; }
+  // shuffle face-up, non-cleared cards' ranks/suits among themselves
+  const live = game.cards.filter(c => !c.cleared && !c.faceDown);
+  const ranks = live.map(c => ({ rank:c.rank, suit:c.suit }));
+  shuffle(ranks, game.rng);
+  live.forEach((c, i) => { c.rank = ranks[i].rank; c.suit = ranks[i].suit; c.anim = { kind:'shuffle', t:0, dur: 360 }; });
+  state.boosters.shuffle -= 1;
+  saveState();
+  spawnParticles(0.5, 0.5, 30, '#06d6a0');
+  haptic('success');
+  beepShuffle();
+  renderHUD();
+}
+
+function checkWin() {
+  const remaining = game.cards.filter(c => !c.cleared);
+  if (remaining.length === 0) {
+    finishLevel(true);
+    return;
+  }
+  // lose: stock empty AND no legal moves
+  if (game.stock.length === 0) {
+    const playable = remaining.filter(c => isPlayable(c, game) && (Card.isMatch(c.rank, game.waste.rank) || game.waste.wild || c.wild));
+    if (playable.length === 0) {
+      finishLevel(false);
+    }
+  }
+}
+
+function finishLevel(won) {
+  if (game.finished) return;
+  game.finished = true;
+  game.won = won;
+  const def = LEVELS.find(l => l.id === game.levelId);
+  let stars = 0;
+  if (won) {
+    // stock-leftover bonus
+    const leftover = game.stock.length * 50;
+    game.score += leftover;
+    spawnScorePopup(0.5, 0.5, '+' + leftover + ' ' + t('stock_left'));
+    // star tiers
+    if (game.score >= def.perfect) stars = 3;
+    else if (game.score >= def.gold) stars = 2;
+    else stars = 1;
+    const prev = state.starsPerLevel[game.levelId] || 0;
+    if (stars > prev) state.starsPerLevel[game.levelId] = stars;
+    state.stars = Object.values(state.starsPerLevel).reduce((a,b)=>a+b,0);
+    state.bestScorePerLevel[game.levelId] = Math.max(state.bestScorePerLevel[game.levelId] || 0, game.score);
+    state.maxLevelUnlocked = Math.max(state.maxLevelUnlocked, game.levelId + 1);
+    state.coins += 50 + stars * 30 + (state.battlePassUntil > Date.now() ? 30 : 0);
+    bumpStreakOnWin();
+    state.totalGames += 1;
+    state.gamesPlayedToday = (state.gamesPlayedYMD === ymd()) ? (state.gamesPlayedToday + 1) : 1;
+    state.gamesPlayedYMD = ymd();
+    saveState();
+    mp('level_complete', { level: game.levelId, score: game.score, stars, chain_best: game.chain });
+    spawnConfetti();
+    setTimeout(() => openLevelCompleteModal(stars), 700);
+  } else {
+    saveState();
+    mp('level_failed', { level: game.levelId, score: game.score });
+    setTimeout(() => openLevelFailedModal(), 500);
+  }
+  pushHeartbeat();
+  submitLeaderboard();
+}
+
+function bumpStreakOnWin() {
+  const today = ymd();
+  if (state.lastPlayedYMD === today) return;
+  const y = new Date(); y.setUTCDate(y.getUTCDate()-1);
+  if (state.lastPlayedYMD === ymd(y) || !state.lastPlayedYMD) {
+    state.streak = (state.streak || 0) + 1;
+  } else if (state.shieldUntil > Date.now()) {
+    state.streak = state.streak; // shielded
+  } else {
+    state.streak = 1;
+  }
+  state.lastPlayedYMD = today;
+}
+
+/* ============== [JS-09] BOOSTERS UI ============== */
+function armBooster(name) {
+  if (name && state.boosters[name] <= 0) { toast(t('not_enough')); return; }
+  if (name === 'shuffle') { shuffleBoard(); return; }
+  if (name === 'undo')    { undo(); return; }
+  game.armedBooster = (game.armedBooster === name) ? null : name;
+  renderBoosterRow();
+  if (game.armedBooster === 'wild') toast(t('armed_tap_card'));
+}
+
+function renderBoosterRow() {
+  const row = document.getElementById('booster-row');
+  if (!row) return;
+  row.innerHTML = '';
+  BOOSTER_LIST.forEach(name => {
+    const n = state.boosters[name] | 0;
+    const b = document.createElement('button');
+    b.className = 'booster' + (n <= 0 ? ' empty' : '') + (game.armedBooster === name ? ' armed' : '');
+    b.innerHTML = BOOSTER_ICON[name] + '<span class="count">' + n + '</span>';
+    b.addEventListener('click', (ev) => { ev.stopPropagation(); armBooster(name); });
+    row.appendChild(b);
+  });
+}
+
+/* ============== [JS-10] RENDER (CANVAS) ============== */
+const canvas = document.getElementById('game-canvas');
+const ctx = canvas.getContext('2d');
+let dpr = window.devicePixelRatio || 1;
+let cssW = 0, cssH = 0;
+let originX = 0, originY = 0, playW = 0, playH = 0;
+function layoutCanvas() {
+  const rect = canvas.getBoundingClientRect();
+  dpr = window.devicePixelRatio || 1;
+  cssW = rect.width; cssH = rect.height;
+  canvas.width = Math.floor(cssW * dpr);
+  canvas.height = Math.floor(cssH * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  // play surface coords: pad 16px each side, top, leaves space at bottom for waste
+  const padX = 12, padTop = 8, padBottom = 4;
+  originX = padX;
+  originY = padTop;
+  playW = cssW - padX * 2;
+  playH = cssH - padTop - padBottom;
+}
+window.addEventListener('resize', () => { layoutCanvas(); });
+
+function normToScreen(nx, ny) {
+  return { x: originX + nx * playW, y: originY + ny * playH };
+}
+
+function drawBg() {
+  // table felt
+  const grad = ctx.createLinearGradient(0, 0, 0, cssH);
+  grad.addColorStop(0, 'rgba(255,255,255,0.02)');
+  grad.addColorStop(1, 'rgba(0,0,0,0.20)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, cssW, cssH);
+}
+
+function drawRoundedRect(c, x, y, w, h, r) {
+  c.beginPath();
+  c.moveTo(x + r, y);
+  c.lineTo(x + w - r, y);
+  c.quadraticCurveTo(x + w, y, x + w, y + r);
+  c.lineTo(x + w, y + h - r);
+  c.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  c.lineTo(x + r, y + h);
+  c.quadraticCurveTo(x, y + h, x, y + h - r);
+  c.lineTo(x, y + r);
+  c.quadraticCurveTo(x, y, x + r, y);
+  c.closePath();
+}
+
+function drawCardFace(c, x, y, w, h, card, scaleX) {
+  scaleX = (scaleX == null) ? 1 : scaleX;
+  c.save();
+  c.translate(x + w/2, y + h/2);
+  c.scale(scaleX, 1);
+  c.translate(-w/2, -h/2);
+  // shadow
+  c.fillStyle = 'rgba(0,0,0,0.35)';
+  drawRoundedRect(c, 1, 3, w, h, CARD_R); c.fill();
+  // face
+  const grad = c.createLinearGradient(0, 0, 0, h);
+  grad.addColorStop(0, '#fffcf2');
+  grad.addColorStop(1, '#e9e1c4');
+  c.fillStyle = grad;
+  drawRoundedRect(c, 0, 0, w, h, CARD_R); c.fill();
+  // inner border
+  c.strokeStyle = 'rgba(0,0,0,0.10)';
+  c.lineWidth = 1;
+  drawRoundedRect(c, 1, 1, w-2, h-2, CARD_R-1); c.stroke();
+  // rank+suit corners
+  const rank = RANK_LABEL[card.rank];
+  const suit = SUITS[card.suit % 4];
+  c.fillStyle = SUIT_COLOR[suit];
+  c.font = '700 ' + Math.floor(h*0.20) + 'px Inter, system-ui, sans-serif';
+  c.textBaseline = 'top';
+  c.textAlign = 'left';
+  c.fillText(rank, 5, 4);
+  c.font = '700 ' + Math.floor(h*0.16) + 'px Inter, system-ui, sans-serif';
+  c.fillText(suit, 6, 4 + Math.floor(h*0.22));
+  // big center suit
+  c.font = '700 ' + Math.floor(h*0.45) + 'px Inter, system-ui, sans-serif';
+  c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.fillText(suit, w/2, h/2 + 4);
+  // bottom-right rank rotated
+  c.save();
+  c.translate(w - 5, h - 4);
+  c.rotate(Math.PI);
+  c.font = '700 ' + Math.floor(h*0.20) + 'px Inter, system-ui, sans-serif';
+  c.textBaseline = 'top';
+  c.textAlign = 'left';
+  c.fillText(rank, 0, 0);
+  c.restore();
+  // overlays for types
+  if (card.type === 'mult') {
+    c.strokeStyle = '#ffd166'; c.lineWidth = 3;
+    drawRoundedRect(c, 1.5, 1.5, w-3, h-3, CARD_R-1); c.stroke();
+    c.fillStyle = '#ffd166';
+    c.fillRect(w/2 - 12, h - 18, 24, 14);
+    c.fillStyle = '#1a0b2e';
+    c.font = '900 11px Inter, sans-serif'; c.textAlign='center'; c.textBaseline='middle';
+    c.fillText('x' + (card.multValue || 2), w/2, h - 11);
+  }
+  if (card.type === 'treasure') {
+    c.fillStyle = 'rgba(255,209,102,0.92)';
+    c.beginPath(); c.arc(w/2, h*0.35, h*0.18, 0, Math.PI*2); c.fill();
+    c.fillStyle = '#1a0b2e';
+    c.font = '900 ' + Math.floor(h*0.18) + 'px Inter, sans-serif';
+    c.textAlign='center'; c.textBaseline='middle';
+    c.fillText('🪙', w/2, h*0.35);
+  }
+  if (card.type === 'memory') {
+    c.fillStyle = 'rgba(168,58,240,0.6)';
+    drawRoundedRect(c, 0, 0, w, h, CARD_R); c.fill();
+    c.fillStyle = '#fff';
+    c.font = '900 ' + Math.floor(h*0.30) + 'px Inter, sans-serif';
+    c.textAlign='center'; c.textBaseline='middle';
+    c.fillText('?', w/2, h/2);
+  }
+  if (card.type === 'locked' && card.lockCount > 0) {
+    c.fillStyle = 'rgba(0,0,0,0.6)';
+    drawRoundedRect(c, 0, 0, w, h, CARD_R); c.fill();
+    c.fillStyle = '#fff';
+    c.font = '900 ' + Math.floor(h*0.36) + 'px Inter, sans-serif';
+    c.textAlign='center'; c.textBaseline='middle';
+    c.fillText('🔒', w/2, h/2 - 4);
+    c.font = '900 11px Inter, sans-serif';
+    c.fillText(String(card.lockCount), w/2, h - 12);
+  }
+  if (card.wild) {
+    const wg = c.createLinearGradient(0, 0, w, h);
+    wg.addColorStop(0, 'rgba(239,71,111,0.4)');
+    wg.addColorStop(0.5, 'rgba(255,209,102,0.4)');
+    wg.addColorStop(1, 'rgba(6,214,160,0.4)');
+    c.fillStyle = wg;
+    drawRoundedRect(c, 0, 0, w, h, CARD_R); c.fill();
+    c.fillStyle = '#fff';
+    c.font='900 ' + Math.floor(h*0.4)+'px Inter, sans-serif'; c.textAlign='center'; c.textBaseline='middle';
+    c.fillText('🃏', w/2, h/2);
+  }
+  c.restore();
+}
+
+function drawCardBack(c, x, y, w, h, scaleX) {
+  scaleX = (scaleX == null) ? 1 : scaleX;
+  c.save();
+  c.translate(x + w/2, y + h/2);
+  c.scale(scaleX, 1);
+  c.translate(-w/2, -h/2);
+  // shadow
+  c.fillStyle = 'rgba(0,0,0,0.35)';
+  drawRoundedRect(c, 1, 3, w, h, CARD_R); c.fill();
+  // back
+  const grad = c.createLinearGradient(0, 0, w, h);
+  grad.addColorStop(0, '#6a3df0');
+  grad.addColorStop(1, '#2a0f5a');
+  c.fillStyle = grad;
+  drawRoundedRect(c, 0, 0, w, h, CARD_R); c.fill();
+  c.strokeStyle = 'rgba(255,255,255,0.25)';
+  c.setLineDash([4,3]); c.lineWidth = 1.5;
+  drawRoundedRect(c, 4, 4, w-8, h-8, CARD_R-2); c.stroke();
+  c.setLineDash([]);
+  c.fillStyle = 'rgba(255,209,102,0.85)';
+  c.font = '700 ' + Math.floor(h*0.36) + 'px Inter, sans-serif';
+  c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.fillText('♛', w/2, h/2);
+  c.restore();
+}
+
+function drawCards() {
+  // sort by layer then y so deeper cards render first
+  const sorted = game.cards.slice().sort((a,b) => (a.layer - b.layer) || (a.y - b.y));
+  for (const card of sorted) {
+    if (card.cleared && !card.anim) continue;
+    let nx = card.x, ny = card.y;
+    let scaleX = 1;
+    if (card.anim) {
+      card.anim.t += 16;
+      const p = clamp(card.anim.t / card.anim.dur, 0, 1);
+      if (card.anim.kind === 'toWaste') {
+        const target = { x: wastePileNorm().x, y: wastePileNorm().y };
+        const e = easeOutCubic(p);
+        nx = lerp(card.anim.fromX, target.x, e);
+        ny = lerp(card.anim.fromY, target.y, e);
+        if (p >= 1) { card.anim = null; }
+      } else if (card.anim.kind === 'flip') {
+        const e = p;
+        const s = Math.abs(Math.cos(e * Math.PI));
+        scaleX = Math.max(0.06, s);
+        if (p >= 1) card.anim = null;
+      } else if (card.anim.kind === 'shuffle') {
+        const e = easeOutBack(p);
+        ny = card.y - (1 - e) * 0.05;
+        if (p >= 1) card.anim = null;
+      }
+    }
+    if (card.cleared && !card.anim) continue;
+    const pos = normToScreen(nx, ny);
+    const x = pos.x - CARD_W/2;
+    const y = pos.y - CARD_H/2;
+    const showFace = !card.faceDown || (card.anim && card.anim.kind === 'flip' && card.anim.t > card.anim.dur*0.5);
+    if (showFace) drawCardFace(ctx, x, y, CARD_W, CARD_H, card, scaleX);
+    else drawCardBack(ctx, x, y, CARD_W, CARD_H, scaleX);
+    // playable highlight
+    if (!card.faceDown && !card.cleared && isPlayable(card, game) && (Card.isMatch(card.rank, game.waste.rank) || game.waste.wild)) {
+      ctx.save();
+      ctx.strokeStyle = 'rgba(6,214,160,0.85)';
+      ctx.lineWidth = 2.5;
+      drawRoundedRect(ctx, x - 1, y - 1, CARD_W + 2, CARD_H + 2, CARD_R + 1);
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+}
+
+function drawParticles() {
+  const next = [];
+  for (const p of game.particles) {
+    p.t += 1;
+    if (p.t > p.life) continue;
+    const k = p.t / p.life;
+    const pos = normToScreen(p.x, p.y);
+    ctx.save();
+    ctx.globalAlpha = 1 - k;
+    ctx.fillStyle = p.color;
+    ctx.beginPath();
+    ctx.arc(pos.x + p.vx * p.t, pos.y + p.vy * p.t + 0.5 * 0.05 * p.t * p.t, p.r * (1 - k * 0.5), 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    next.push(p);
+  }
+  game.particles = next;
+}
+
+function drawScorePopups() {
+  const next = [];
+  for (const p of game.scorePopups) {
+    p.t += 1;
+    if (p.t > p.life) continue;
+    const k = p.t / p.life;
+    const pos = normToScreen(p.x, p.y - k * 0.06);
+    ctx.save();
+    ctx.globalAlpha = 1 - k;
+    ctx.fillStyle = p.color || '#ffd166';
+    ctx.font = '900 18px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.shadowColor = 'rgba(0,0,0,0.6)';
+    ctx.shadowBlur = 6;
+    ctx.fillText(p.text, pos.x, pos.y);
+    ctx.restore();
+    next.push(p);
+  }
+  game.scorePopups = next;
+}
+
+function wastePileNorm() {
+  // approximate waste pile location in canvas-normalized coords
+  return { x: 0.78, y: 0.95 };
+}
+
+function renderHUD() {
+  document.getElementById('hud-streak-n').textContent = state.streak | 0;
+  document.getElementById('hud-stars-n').textContent = state.stars | 0;
+  document.getElementById('hud-coins-n').textContent = state.coins | 0;
+  document.getElementById('play-lvl').textContent = 'L ' + game.levelId;
+  document.getElementById('play-score').textContent = game.score | 0;
+  const def = LEVELS.find(l => l.id === game.levelId);
+  if (def) document.getElementById('play-target').textContent = '/ ' + def.par + (game.score >= def.gold ? ' ★★' : game.score >= def.par ? ' ★' : '');
+  // combo bar
+  const tier = currentComboTier(game.chain);
+  const next = COMBO_TIERS[Math.min(tier + 1, COMBO_TIERS.length - 1)];
+  const cur = COMBO_TIERS[tier];
+  const span = Math.max(1, next.chain - cur.chain);
+  const p = (next.chain === cur.chain) ? 1 : ((game.chain - cur.chain) / span);
+  document.getElementById('combo-bar').style.width = clamp(p * 100, 0, 100) + '%';
+  document.getElementById('combo-tier').textContent = COMBO_TIERS[tier].mult > 1 ? 'x' + COMBO_TIERS[tier].mult : '';
+  // stock + waste
+  document.getElementById('stock-count').textContent = game.stock.length;
+  drawWasteHTML();
+  renderBoosterRow();
+}
+
+function drawWasteHTML() {
+  const el = document.getElementById('waste-pile');
+  if (!el) return;
+  el.innerHTML = '';
+  const w = 64, h = 90;
+  const cv = document.createElement('canvas');
+  cv.width = Math.floor(w * dpr); cv.height = Math.floor(h * dpr);
+  cv.style.width = w + 'px'; cv.style.height = h + 'px';
+  const c2 = cv.getContext('2d');
+  c2.setTransform(dpr,0,0,dpr,0,0);
+  if (game.waste) drawCardFace(c2, 0, 0, w, h, game.waste, 1);
+  el.appendChild(cv);
+}
+
+function spawnParticles(nx, ny, n, color) {
+  for (let i = 0; i < n; i++) {
+    const a = Math.random() * Math.PI * 2;
+    const sp = rand(1.2, 3.0);
+    game.particles.push({
+      x: nx, y: ny,
+      vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 1.5,
+      t: 0, life: 28 + Math.random() * 12,
+      r: rand(1.5, 3.2), color: color || '#fff'
+    });
+  }
+}
+
+function spawnScorePopup(nx, ny, text, color) {
+  game.scorePopups.push({ x: nx, y: ny, t: 0, life: 50, text, color });
+}
+
+function spawnConfetti() {
+  const colors = ['#ffd166','#06d6a0','#ef476f','#118ab2','#fff','#a83af0'];
+  for (let i = 0; i < 60; i++) {
+    game.particles.push({
+      x: 0.5, y: 0.2,
+      vx: rand(-3, 3), vy: rand(-2, -5),
+      t: 0, life: 80 + Math.random() * 40,
+      r: rand(2, 4), color: colors[i % colors.length]
+    });
+  }
+}
+
+function flashCard(card, color) {
+  spawnParticles(card.x, card.y, 6, color || '#ef476f');
+}
+
+function flashComboBreak() {
+  // tiny shake effect via CSS class on canvas
+  canvas.style.transition = 'transform .1s ease';
+  canvas.style.transform = 'translateX(-3px)';
+  setTimeout(() => { canvas.style.transform = 'translateX(3px)'; }, 60);
+  setTimeout(() => { canvas.style.transform = 'translateX(0)'; }, 120);
+}
+
+function showComboCallout(tier) {
+  const el = document.getElementById('combo-callout');
+  if (!el) return;
+  const def = COMBO_TIERS[tier];
+  if (!def || !def.label) return;
+  el.textContent = def.label;
+  el.classList.add('show');
+  clearTimeout(showComboCallout._t);
+  showComboCallout._t = setTimeout(() => el.classList.remove('show'), 700);
+}
+
+/* ============== [JS-11] INPUT ============== */
+canvas.addEventListener('pointerdown', (ev) => {
+  if (!game.active || game.finished) return;
+  const rect = canvas.getBoundingClientRect();
+  const px = ev.clientX - rect.left;
+  const py = ev.clientY - rect.top;
+  // hit-test top-most card (highest layer) under point
+  let hit = null, hitLayer = -1;
+  for (const c of game.cards) {
+    if (c.cleared) continue;
+    const pos = normToScreen(c.x, c.y);
+    if (px >= pos.x - CARD_W/2 && px <= pos.x + CARD_W/2 && py >= pos.y - CARD_H/2 && py <= pos.y + CARD_H/2) {
+      if (c.layer > hitLayer) { hit = c; hitLayer = c.layer; }
+    }
+  }
+  if (hit) tryPlayCard(hit.id);
+});
+
+document.getElementById('stock-pile').addEventListener('click', () => {
+  if (!game.active || game.finished) return;
+  drawFromStock();
+});
+
+/* ============== [JS-12] AUDIO ============== */
+let AC = null;
+function ensureAC() {
+  if (!state.settings.sound) return null;
+  if (!AC) {
+    try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch {}
+  }
+  if (AC && AC.state === 'suspended') AC.resume();
+  return AC;
+}
+function tone(freq, dur, type, gain) {
+  const ac = ensureAC(); if (!ac) return;
+  const o = ac.createOscillator();
+  const g = ac.createGain();
+  o.type = type || 'sine';
+  o.frequency.value = freq;
+  g.gain.value = 0;
+  g.gain.linearRampToValueAtTime(gain || 0.2, ac.currentTime + 0.01);
+  g.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + dur);
+  o.connect(g).connect(ac.destination);
+  o.start();
+  o.stop(ac.currentTime + dur + 0.02);
+}
+function beepMatch(chain) {
+  const baseFreq = 320 + chain * 28;
+  tone(baseFreq, 0.16, 'triangle', 0.18);
+  tone(baseFreq * 1.5, 0.12, 'sine', 0.08);
+}
+function beepDraw() { tone(180, 0.12, 'sawtooth', 0.12); }
+function beepShuffle() {
+  tone(440, 0.08, 'sine', 0.12); setTimeout(()=>tone(550, 0.08, 'sine', 0.12),80);
+  setTimeout(()=>tone(660, 0.10, 'sine', 0.12),160);
+}
+function beepWin() {
+  tone(523, 0.14, 'triangle', 0.20);
+  setTimeout(()=>tone(659, 0.14, 'triangle', 0.20),140);
+  setTimeout(()=>tone(784, 0.20, 'triangle', 0.22),280);
+}
+function beepLose() {
+  tone(220, 0.18, 'sawtooth', 0.18);
+  setTimeout(()=>tone(165, 0.22, 'sawtooth', 0.18),140);
+}
+
+/* ============== [JS-13] FRAME LOOP ============== */
+function frame() {
+  if (canvas.width !== Math.floor(cssW * dpr)) { /* nothing */ }
+  ctx.clearRect(0, 0, cssW, cssH);
+  drawBg();
+  drawCards();
+  drawParticles();
+  drawScorePopups();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+/* ============== [JS-14] MAP VIEW ============== */
+function renderMap() {
+  const root = document.getElementById('map-scroller');
+  if (!root) return;
+  root.innerHTML = '';
+  // map header
+  document.getElementById('map-title').textContent = t('quest_map');
+  // build nodes
+  LEVELS.forEach((lvl, idx) => {
+    const node = document.createElement('button');
+    const stars = state.starsPerLevel[lvl.id] || 0;
+    const unlocked = lvl.id <= state.maxLevelUnlocked;
+    const isCurrent = unlocked && lvl.id === state.maxLevelUnlocked && stars < 3;
+    node.className = 'map-node' + (unlocked ? '' : ' locked') + (isCurrent ? ' current' : '');
+    node.dataset.side = (idx % 4 === 1 ? 'L' : idx % 4 === 3 ? 'R' : 'C');
+    if (unlocked) {
+      node.innerHTML = '<div class="n-num">' + lvl.id + '</div><div class="n-stars">' + ('★'.repeat(stars) + '☆'.repeat(3 - stars)) + '</div>';
+      node.addEventListener('click', () => {
+        state.level = lvl.id; saveState();
+        document.getElementById('play-fab-lbl').textContent = t('play_level', { n: lvl.id });
+        toast(t('play_level', { n: lvl.id }));
+      });
+      node.addEventListener('dblclick', () => startLevel(lvl.id));
+    } else {
+      node.innerHTML = '<div class="lock">🔒</div>';
+    }
+    root.appendChild(node);
+  });
+  // coming soon end-card
+  const more = document.createElement('div');
+  more.style.textAlign = 'center';
+  more.style.padding = '18px 12px 70px';
+  more.style.color = 'var(--ink-dim)';
+  more.style.fontSize = '12px';
+  more.textContent = t('coming_soon');
+  root.appendChild(more);
+  // play fab updates to current level
+  document.getElementById('play-fab-lbl').textContent = t('play_level', { n: state.level || state.maxLevelUnlocked });
+}
+
+function showPlayScreen() {
+  document.getElementById('map-screen').style.display = 'none';
+  document.getElementById('play-screen').classList.add('active');
+  document.getElementById('play-fab-wrap').style.display = 'none';
+  setTimeout(layoutCanvas, 16);
+}
+function showMapScreen() {
+  document.getElementById('map-screen').style.display = 'block';
+  document.getElementById('play-screen').classList.remove('active');
+  document.getElementById('play-fab-wrap').style.display = 'flex';
+  game.active = false;
+}
+
+/* ============== [JS-15] SHOP TAB ============== */
+function renderShop() {
+  const root = document.getElementById('shop-scroll');
+  if (!root) return;
+  root.innerHTML = '';
+
+  // featured starter pack
+  const featured = document.createElement('div');
+  featured.className = 'shop-featured';
+  featured.innerHTML = '<div class="icon">🎁</div>' +
+    '<div><h3>' + t('sku_starter_t') + '</h3><div class="sub">' + t('sku_starter_s') + '</div></div>' +
+    '<button class="buy" data-sku="starter_pack">⭐ 199</button>';
+  root.appendChild(featured);
+
+  // section: coin packs
+  const sec1 = document.createElement('div'); sec1.className = 'shop-section-title'; sec1.textContent = t('shop_packs');
+  root.appendChild(sec1);
+  const g1 = document.createElement('div'); g1.className = 'shop-grid';
+  ['coins_small','coins_big','coins_mega'].forEach(sku => g1.appendChild(makeShopCard(sku)));
+  root.appendChild(g1);
+
+  // section: boosters
+  const sec2 = document.createElement('div'); sec2.className = 'shop-section-title'; sec2.textContent = t('shop_boosters');
+  root.appendChild(sec2);
+  const g2 = document.createElement('div'); g2.className = 'shop-grid';
+  ['revive','shuffle_pack','wild_pack','undo_pack'].forEach(sku => g2.appendChild(makeShopCard(sku)));
+  root.appendChild(g2);
+
+  // section: skins / extras
+  const sec3 = document.createElement('div'); sec3.className = 'shop-section-title'; sec3.textContent = t('shop_skins');
+  root.appendChild(sec3);
+  const g3 = document.createElement('div'); g3.className = 'shop-grid';
+  ['skin_royal','skin_forest'].forEach(sku => g3.appendChild(makeShopCard(sku)));
+  root.appendChild(g3);
+
+  // section: other
+  const sec4 = document.createElement('div'); sec4.className = 'shop-section-title'; sec4.textContent = t('shop_other');
+  root.appendChild(sec4);
+  const g4 = document.createElement('div'); g4.className = 'shop-grid';
+  ['streak_shield','battle_pass'].forEach(sku => g4.appendChild(makeShopCard(sku)));
+  root.appendChild(g4);
+
+  // wire buy clicks
+  root.querySelectorAll('[data-sku]').forEach(b => b.addEventListener('click', (e) => {
+    const sku = e.currentTarget.dataset.sku;
+    purchase(sku);
+  }));
+}
+function makeShopCard(sku) {
+  const def = SKU_DISPLAY[sku] || { ic:'?', stars:0, titleKey:sku, subKey:'' };
+  const owned = (sku.startsWith('skin_') && state.ownedSkins.includes(sku.replace('skin_',''))) ||
+                (sku === 'battle_pass' && state.battlePassUntil > Date.now()) ||
+                (sku === 'streak_shield' && state.shieldUntil > Date.now());
+  const el = document.createElement('div');
+  el.className = 'shop-card' + (owned ? ' owned' : '');
+  el.innerHTML =
+    '<div class="ic">' + def.ic + '</div>' +
+    '<h4>' + t(def.titleKey) + '</h4>' +
+    '<div class="sub">' + t(def.subKey) + '</div>' +
+    '<button class="buy" data-sku="' + sku + '">' + (owned ? '✓' : ('⭐ ' + def.stars)) + '</button>';
+  return el;
+}
+async function purchase(sku) {
+  mp('iap_attempt', { sku });
+  if (!iapEnabled) {
+    toast(t('iap_unavail'));
+    return;
+  }
+  try {
+    const r = await api('/api/iap/create-invoice', { sku });
+    if (!r.ok || !r.link) {
+      toast(t('iap_unavail'));
+      return;
+    }
+    if (TG?.openInvoice) {
+      TG.openInvoice(r.link, (status) => {
+        if (status === 'paid') {
+          toast(t('iap_thanks'));
+          mp('iap_paid', { sku });
+          setTimeout(pollPurchases, 1200);
+        }
+      });
+    } else {
+      window.open(r.link, '_blank');
+    }
+  } catch (e) {
+    toast(t('iap_unavail'));
+  }
+}
+
+/* ============== [JS-16] EARN TAB ============== */
+function renderEarn() {
+  const root = document.getElementById('earn-scroll');
+  if (!root) return;
+  root.innerHTML = '';
+  // bp banner
+  if (state.battlePassUntil > Date.now()) {
+    const days = Math.ceil((state.battlePassUntil - Date.now()) / 86400000);
+    const bp = document.createElement('div'); bp.className = 'bp-banner';
+    bp.innerHTML = '<div><h4>🎖️ ' + t('bp_active', { n: days }) + '</h4><div class="days">2× ⭐ on rewards</div></div>';
+    root.appendChild(bp);
+  } else {
+    const bp = document.createElement('div'); bp.className = 'bp-banner';
+    bp.innerHTML = '<div><h4>🎖️ ' + t('bp_inactive') + '</h4><div class="days">⭐ 500</div></div><button data-sku="battle_pass">⭐ 500</button>';
+    bp.querySelector('button').addEventListener('click', () => purchase('battle_pass'));
+    root.appendChild(bp);
+  }
+
+  // chest
+  const chest = document.createElement('div'); chest.className = 'chest-card';
+  chest.innerHTML = '<h4>🎁 ' + t('chest_title') + '</h4>';
+  const row = document.createElement('div'); row.className = 'chest-row';
+  const today = ymd();
+  const day = chestDayForToday();
+  const claimedToday = state.chestClaimedYMD === today;
+  for (let i = 1; i <= 7; i++) {
+    const cell = document.createElement('div'); cell.className = 'chest-cell';
+    if (i < day) cell.classList.add('claimed');
+    else if (i === day && !claimedToday) cell.classList.add('today');
+    else if (i === day && claimedToday) cell.classList.add('claimed');
+    cell.innerHTML = '<div>'+i+'</div><div class="ic">'+(i===7?'🏆':'🎁')+'</div><div class="rw">+'+CHEST_REWARDS[i-1]+'</div>';
+    row.appendChild(cell);
+  }
+  chest.appendChild(row);
+  const claimBtn = document.createElement('button');
+  claimBtn.className = 'chest-claim';
+  if (claimedToday) { claimBtn.textContent = t('chest_claimed'); claimBtn.disabled = true; }
+  else { claimBtn.textContent = t('chest_claim', { n: day }); claimBtn.addEventListener('click', claimChest); }
+  chest.appendChild(claimBtn);
+  root.appendChild(chest);
+
+  // missions
+  const mh = document.createElement('div'); mh.className = 'shop-section-title'; mh.textContent = t('miss_title');
+  root.appendChild(mh);
+  MISSIONS.forEach(m => root.appendChild(makeMissionRow(m)));
+
+  // leaderboard
+  const lb = document.createElement('div'); lb.className = 'lb-card';
+  lb.innerHTML = '<h4>🏆 ' + t('lb_title') + '</h4><div id="lb-list">…</div>';
+  root.appendChild(lb);
+  fetchLeaderboard();
+}
+
+const MISSIONS = [
+  { id:'play3',   icon:'🎴', titleKey:'miss_play3',   subKey:'miss_play3_sub',   reward: 30, kind:'daily', auto:true, progress: () => Math.min(state.gamesPlayedYMD === ymd() ? state.gamesPlayedToday : 0, 3) / 3 },
+  { id:'chain5',  icon:'⚡', titleKey:'miss_chain5',  subKey:'miss_chain5_sub',  reward: 30, kind:'daily', auto:true, progress: () => 0 },
+  { id:'share',   icon:'📨', titleKey:'miss_share',   subKey:'miss_share_sub',   reward: 40, kind:'oneshot', action:'share' },
+  { id:'follow',  icon:'📢', titleKey:'miss_follow',  subKey:'miss_follow_sub',  reward: 40, kind:'oneshot', action:'follow', url:'https://t.me/solitairequestgame' },
+  { id:'streak7', icon:'🔥', titleKey:'miss_streak7', subKey:'miss_streak7_sub', reward: 100, kind:'oneshot', auto:true, progress: () => Math.min(state.streak, 7) / 7 }
+];
+
+function makeMissionRow(m) {
+  const el = document.createElement('div'); el.className = 'mission';
+  const cs = (state.missions && state.missions[m.id]) || {};
+  const today = ymd();
+  const claimedToday = cs.claimedYMD === today;
+  const completedOnce = !!cs.claimed;
+  const goneOut = !!cs.goneOut;
+  let btnLabel = t('mission_go'), btnClass = '';
+  if (m.auto) {
+    const p = m.progress ? m.progress() : 0;
+    if ((m.kind === 'daily' && claimedToday) || (m.kind === 'oneshot' && completedOnce)) { btnLabel = t('mission_done'); btnClass = 'done'; }
+    else if (p >= 1) { btnLabel = t('mission_claim'); }
+    else btnLabel = Math.floor(p * 100) + '%';
+  } else {
+    if ((m.kind === 'oneshot' && completedOnce)) { btnLabel = t('mission_done'); btnClass = 'done'; }
+    else if (goneOut) { btnLabel = t('mission_check'); btnClass = 'check'; }
+  }
+  el.innerHTML =
+    '<div class="ic">' + m.icon + '</div>' +
+    '<div class="body"><h5>' + t(m.titleKey) + '</h5><div class="sub">' + t(m.subKey) + '</div><div class="reward">🪙 ' + m.reward + '</div></div>' +
+    '<button class="btn ' + btnClass + '">' + btnLabel + '</button>';
+  el.querySelector('button').addEventListener('click', () => handleMission(m));
+  return el;
+}
+
+function handleMission(m) {
+  const cs = state.missions[m.id] || {};
+  state.missions[m.id] = cs;
+  const today = ymd();
+  if (m.kind === 'daily' && cs.claimedYMD === today) return;
+  if (m.kind === 'oneshot' && cs.claimed) return;
+  if (m.auto) {
+    const p = m.progress ? m.progress() : 0;
+    if (p < 1) { toast(Math.floor(p * 100) + '%'); return; }
+    grantMission(m); return;
+  }
+  if (!cs.goneOut) {
+    cs.goneOut = true; saveState(); renderEarn();
+    if (m.action === 'share') {
+      const url = (TG && TG.openTelegramLink) ? 'https://t.me/share/url?url=' + encodeURIComponent(window.location.href) + '&text=' + encodeURIComponent(t('welcome_t')) : window.location.href;
+      try { TG?.openTelegramLink ? TG.openTelegramLink(url) : window.open(url, '_blank'); } catch { window.open(url, '_blank'); }
+    } else if (m.action === 'follow' && m.url) {
+      try { TG?.openTelegramLink ? TG.openTelegramLink(m.url) : window.open(m.url, '_blank'); } catch { window.open(m.url, '_blank'); }
+    }
+  } else {
+    grantMission(m);
+  }
+}
+
+function grantMission(m) {
+  const cs = state.missions[m.id] || {};
+  state.missions[m.id] = cs;
+  const bp = state.battlePassUntil > Date.now() ? 2 : 1;
+  state.coins += m.reward * bp;
+  if (m.kind === 'daily') cs.claimedYMD = ymd();
+  else cs.claimed = true;
+  saveState(); renderEarn();
+  toast('+' + (m.reward * bp) + ' 🪙');
+  haptic('success');
+  mp('mission_claim', { id: m.id, reward: m.reward * bp });
+}
+
+function chestDayForToday() {
+  const today = ymd();
+  if (state.chestClaimedYMD === today) return state.chestDay;
+  // yesterday claimed -> advance; else if missed -> reset to 1
+  const yest = new Date(Date.now() - 86400000); const yymd = ymd(yest);
+  if (state.chestClaimedYMD === yymd) return Math.min(7, (state.chestDay || 0) + 1);
+  if (state.chestClaimedYMD === '') return 1;
+  return 1;
+}
+function claimChest() {
+  const today = ymd();
+  if (state.chestClaimedYMD === today) return;
+  const day = chestDayForToday();
+  const bp = state.battlePassUntil > Date.now() ? 2 : 1;
+  const reward = CHEST_REWARDS[day - 1] * bp;
+  state.coins += reward;
+  state.chestDay = day;
+  state.chestClaimedYMD = today;
+  saveState();
+  haptic('success');
+  toast('+' + reward + ' 🪙');
+  mp('chest_claim', { day, reward });
+  renderEarn();
+}
+
+async function fetchLeaderboard() {
+  try {
+    const r = await fetch('/api/lb');
+    const j = await r.json();
+    const list = document.getElementById('lb-list');
+    if (!list) return;
+    list.innerHTML = '';
+    (j.players || []).slice(0, 25).forEach((p, i) => {
+      const row = document.createElement('div');
+      row.className = 'lb-row' + (state.uid && p.uid === state.uid ? ' me' : '');
+      row.innerHTML = '<div class="rank">' + (i+1) + '</div><div class="name">' + escapeHTML(p.name) + '</div><div class="pts">⭐ ' + p.stars + '</div>';
+      list.appendChild(row);
+    });
+  } catch {}
+}
+function escapeHTML(s) { return (s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+async function submitLeaderboard() {
+  try {
+    await api('/api/lb/submit', { stars: state.stars, coins: state.coins, level: state.maxLevelUnlocked });
+  } catch {}
+}
+
+/* ============== [JS-17] MODALS ============== */
+function openModal(html, onMount) {
+  const root = document.getElementById('modal-root');
+  root.innerHTML = '<div class="modal">' + html + '</div>';
+  root.classList.add('open');
+  root.onclick = (ev) => { if (ev.target === root) closeModal(); };
+  if (onMount) onMount(root.firstElementChild);
+}
+function closeModal() {
+  const root = document.getElementById('modal-root');
+  root.classList.remove('open');
+  root.innerHTML = '';
+}
+function openLevelCompleteModal(stars) {
+  const def = LEVELS.find(l => l.id === game.levelId);
+  const reward = 50 + stars * 30 + (state.battlePassUntil > Date.now() ? 30 : 0);
+  const starsHtml = [0,1,2].map(i => '<div class="st ' + (i < stars ? 'lit' : '') + '">★</div>').join('');
+  const next = game.levelId + 1;
+  const html =
+    '<button class="x" onclick="closeModal();showMapScreen();renderMap()">✕</button>' +
+    '<h3>' + t('lvl_complete') + '</h3>' +
+    '<p>' + t('level', { n: game.levelId }) + ' · ' + game.score + ' / ' + def.par + '</p>' +
+    '<div class="stars-display">' + starsHtml + '</div>' +
+    '<div class="reward-row"><div class="reward-chip">🪙 +' + reward + '</div><div class="reward-chip">⭐ ' + stars + '</div></div>' +
+    '<div class="cta-row">' +
+      '<button class="cta secondary" id="cta-map">'+ t('btn_map') +'</button>' +
+      (next <= LEVELS.length ? '<button class="cta" id="cta-next">'+ t('btn_next') +'</button>' : '<button class="cta secondary" disabled>'+ t('coming_soon') +'</button>') +
+    '</div>';
+  openModal(html, () => {
+    document.getElementById('cta-map').addEventListener('click', () => { closeModal(); showMapScreen(); renderMap(); });
+    const nxt = document.getElementById('cta-next');
+    if (nxt) nxt.addEventListener('click', () => { closeModal(); startLevel(next); });
+  });
+  beepWin();
+  haptic('success');
+}
+function openLevelFailedModal() {
+  const def = LEVELS.find(l => l.id === game.levelId);
+  const html =
+    '<button class="x" onclick="closeModal();showMapScreen();renderMap()">✕</button>' +
+    '<h3>' + t('lvl_failed') + '</h3>' +
+    '<p>' + t('score') + ' ' + game.score + ' / ' + def.par + '</p>' +
+    '<div class="cta-row">' +
+      '<button class="cta secondary" id="cta-map">'+ t('btn_map') +'</button>' +
+      '<button class="cta" id="cta-retry">'+ t('btn_retry') +'</button>' +
+    '</div>';
+  openModal(html, () => {
+    document.getElementById('cta-map').addEventListener('click', () => { closeModal(); showMapScreen(); renderMap(); });
+    document.getElementById('cta-retry').addEventListener('click', () => { closeModal(); startLevel(game.levelId); });
+  });
+  beepLose();
+  haptic('err');
+}
+function openSettingsModal() {
+  const sn = state.settings;
+  const langs = ['en','ru','es','pt','fr','de','uk','nl','it','sv','pl','tr','ar','he','hi','id','vi','zh','ko','ja'];
+  const langGrid = langs.map(l => '<div class="lang-cell ' + (sn.lang === l ? 'on':'') + '" data-lang="' + l + '">' + l.toUpperCase() + '</div>').join('');
+  const html =
+    '<button class="x" onclick="closeModal()">✕</button>' +
+    '<h3>' + t('settings') + '</h3>' +
+    '<div class="set-row"><div class="lbl">' + t('sound') + '</div><div class="toggle ' + (sn.sound?'on':'') + '" data-tog="sound"><div class="dot"></div></div></div>' +
+    '<div class="set-row"><div class="lbl">' + t('haptics') + '</div><div class="toggle ' + (sn.haptics?'on':'') + '" data-tog="haptics"><div class="dot"></div></div></div>' +
+    '<div class="set-row" style="display:block"><div class="lbl" style="margin-bottom:6px">' + t('language') + '</div><div class="lang-grid">' + langGrid + '</div></div>' +
+    '<div style="text-align:center;margin-top:14px;font-size:12px;color:var(--ink-soft)">' +
+      '<a href="privacy.html" target="_blank" style="color:#9aa9ff;margin:0 8px">' + t('privacy') + '</a>·' +
+      '<a href="terms.html" target="_blank" style="color:#9aa9ff;margin:0 8px">' + t('terms') + '</a>' +
+    '</div>' +
+    '<div class="cta-row"><button class="cta secondary" id="cta-howto">' + t('how_to_play') + '</button></div>';
+  openModal(html, (el) => {
+    el.querySelectorAll('.toggle').forEach(tg => tg.addEventListener('click', () => {
+      const key = tg.dataset.tog;
+      state.settings[key] = !state.settings[key];
+      tg.classList.toggle('on');
+      saveState();
+    }));
+    el.querySelectorAll('[data-lang]').forEach(lc => lc.addEventListener('click', () => {
+      const l = lc.dataset.lang;
+      state.settings.lang = l;
+      saveState();
+      applyLang();
+      closeModal();
+      openSettingsModal();
+    }));
+    document.getElementById('cta-howto').addEventListener('click', () => { closeModal(); startFTUE(); });
+  });
+}
+function openConfirmLeaveModal() {
+  const html =
+    '<h3>' + t('confirm_leave_t') + '</h3>' +
+    '<p>' + t('confirm_leave_s') + '</p>' +
+    '<div class="cta-row"><button class="cta secondary" id="stay">' + t('btn_stay') + '</button><button class="cta danger" id="leave">' + t('btn_leave') + '</button></div>';
+  openModal(html, () => {
+    document.getElementById('stay').addEventListener('click', closeModal);
+    document.getElementById('leave').addEventListener('click', () => { closeModal(); showMapScreen(); renderMap(); });
+  });
+}
+
+/* ============== [JS-18] FTUE ============== */
+const FTUE_STEPS = [
+  { tKey:'ftue1_t', bKey:'ftue1_b', draw: ftueDrawMatch },
+  { tKey:'ftue2_t', bKey:'ftue2_b', draw: ftueDrawWrap  },
+  { tKey:'ftue3_t', bKey:'ftue3_b', draw: ftueDrawCombo },
+  { tKey:'ftue4_t', bKey:'ftue4_b', draw: ftueDrawDraw  },
+  { tKey:'ftue5_t', bKey:'ftue5_b', draw: ftueDrawStars }
+];
+let ftueIdx = 0;
+function startFTUE() {
+  ftueIdx = 0; showFTUE();
+}
+function showFTUE() {
+  const step = FTUE_STEPS[ftueIdx];
+  const dotsHtml = FTUE_STEPS.map((s,i) => '<div class="d' + (i===ftueIdx?' on':'') + '"></div>').join('');
+  const html =
+    '<button class="x" id="ftue-skip">✕</button>' +
+    '<h3>' + t(step.tKey) + '</h3>' +
+    '<div class="ftue-canvas-wrap"><canvas id="ftue-cv" width="560" height="400"></canvas></div>' +
+    '<p>' + t(step.bKey) + '</p>' +
+    '<div class="ftue-dots">' + dotsHtml + '</div>' +
+    '<div class="cta-row">' +
+      (ftueIdx > 0 ? '<button class="cta secondary" id="ftue-back">←</button>' : '<button class="cta secondary" id="ftue-skip2">'+ t('btn_leave') +'</button>') +
+      '<button class="cta" id="ftue-next">' + (ftueIdx === FTUE_STEPS.length - 1 ? '✓' : '→') + '</button>' +
+    '</div>';
+  openModal(html, () => {
+    const cv = document.getElementById('ftue-cv');
+    if (cv) {
+      const c2 = cv.getContext('2d');
+      let t0 = performance.now();
+      function loop() {
+        if (!document.body.contains(cv)) return;
+        const dt = performance.now() - t0;
+        step.draw(c2, dt);
+        requestAnimationFrame(loop);
+      }
+      loop();
+    }
+    document.getElementById('ftue-skip').addEventListener('click', () => { state.ftueDone = true; saveState(); closeModal(); });
+    document.getElementById('ftue-skip2')?.addEventListener('click', () => { state.ftueDone = true; saveState(); closeModal(); });
+    document.getElementById('ftue-back')?.addEventListener('click', () => { ftueIdx--; closeModal(); showFTUE(); });
+    document.getElementById('ftue-next').addEventListener('click', () => {
+      if (ftueIdx === FTUE_STEPS.length - 1) { state.ftueDone = true; saveState(); closeModal(); }
+      else { ftueIdx++; closeModal(); showFTUE(); }
+    });
+  });
+}
+
+function ftueDrawCard(c, x, y, rank, suit, scale) {
+  scale = scale || 1;
+  c.save(); c.translate(x, y); c.scale(scale, scale); c.translate(-30, -42);
+  c.fillStyle='rgba(0,0,0,.35)';
+  drawRoundedRect(c, 2, 4, 60, 84, 8); c.fill();
+  c.fillStyle='#fffcf2';
+  drawRoundedRect(c, 0, 0, 60, 84, 8); c.fill();
+  c.fillStyle = SUIT_COLOR[SUITS[suit]];
+  c.font='800 16px Inter, sans-serif'; c.textBaseline='top'; c.textAlign='left';
+  c.fillText(RANK_LABEL[rank], 5, 4);
+  c.font='800 30px Inter, sans-serif'; c.textAlign='center'; c.textBaseline='middle';
+  c.fillText(SUITS[suit], 30, 44);
+  c.restore();
+}
+
+function ftueDrawMatch(c, dt) {
+  c.clearRect(0,0,560,400);
+  c.fillStyle = 'rgba(255,255,255,0.02)'; c.fillRect(0,0,560,400);
+  // mini tableau with 4 cards
+  ftueDrawCard(c, 160, 150, 7, 1);
+  ftueDrawCard(c, 280, 150, 9, 2);
+  ftueDrawCard(c, 400, 150, 5, 0);
+  // waste
+  ftueDrawCard(c, 280, 300, 8, 0);
+  // pulse arrow from waste up to 7 and 9
+  const k = (dt % 1600) / 1600;
+  c.strokeStyle = '#ffd166'; c.lineWidth = 3;
+  c.setLineDash([4,4]);
+  const x1 = 160, x2 = 400;
+  const x = lerp(x1, x2, k);
+  c.beginPath(); c.moveTo(280, 280); c.lineTo(x, 180); c.stroke();
+  c.setLineDash([]);
+  c.fillStyle = '#ffd166';
+  c.font='900 16px Inter, sans-serif'; c.textAlign='center';
+  c.fillText('±1', 280, 380);
+}
+function ftueDrawWrap(c, dt) {
+  c.clearRect(0,0,560,400);
+  ftueDrawCard(c, 130, 200, 13, 0); // K
+  ftueDrawCard(c, 280, 200, 1, 2);  // A
+  ftueDrawCard(c, 430, 200, 2, 1);  // 2
+  // connecting arcs
+  const k = (dt % 1600) / 1600;
+  c.strokeStyle='#06d6a0'; c.lineWidth = 3;
+  c.beginPath();
+  c.arc(205, 200, 75, Math.PI, Math.PI*2);
+  c.stroke();
+  c.beginPath();
+  c.arc(355, 200, 75, Math.PI, Math.PI*2);
+  c.stroke();
+  // moving dot
+  c.fillStyle = '#ffd166';
+  const arc = (k * 2) % 2;
+  let ang;
+  if (arc < 1) { ang = Math.PI + arc * Math.PI; const x = 205 + Math.cos(ang) * 75; const y = 200 + Math.sin(ang) * 75; c.beginPath(); c.arc(x,y,6,0,Math.PI*2); c.fill(); }
+  else { const a = arc - 1; ang = Math.PI + a * Math.PI; const x = 355 + Math.cos(ang) * 75; const y = 200 + Math.sin(ang) * 75; c.beginPath(); c.arc(x,y,6,0,Math.PI*2); c.fill(); }
+}
+function ftueDrawCombo(c, dt) {
+  c.clearRect(0,0,560,400);
+  // chain meter
+  const w = 400; const x0 = 80; const y0 = 200;
+  c.fillStyle='rgba(255,255,255,0.08)'; drawRoundedRect(c, x0, y0, w, 24, 12); c.fill();
+  const p = ((dt % 2400) / 2400);
+  const grad = c.createLinearGradient(x0, 0, x0 + w, 0);
+  grad.addColorStop(0,'#06d6a0'); grad.addColorStop(0.5,'#ffd166'); grad.addColorStop(1,'#ef476f');
+  c.fillStyle = grad; drawRoundedRect(c, x0, y0, w * p, 24, 12); c.fill();
+  // tier labels
+  c.fillStyle='#fff'; c.font='800 14px Inter, sans-serif'; c.textAlign='center';
+  c.fillText('x2', x0 + w * 0.3, y0 - 10);
+  c.fillText('x3', x0 + w * 0.5, y0 - 10);
+  c.fillText('x5', x0 + w * 0.7, y0 - 10);
+  c.fillText('x10', x0 + w * 0.95, y0 - 10);
+  c.font='900 28px Inter, sans-serif';
+  if (p > 0.95) c.fillText('INCREDIBLE!', 280, 100);
+  else if (p > 0.7) c.fillText('AMAZING!', 280, 100);
+  else if (p > 0.5) c.fillText('GREAT!', 280, 100);
+  else if (p > 0.3) c.fillText('NICE!', 280, 100);
+}
+function ftueDrawDraw(c, dt) {
+  c.clearRect(0,0,560,400);
+  // stock + waste
+  c.fillStyle='#2a0f5a'; drawRoundedRect(c, 360, 160, 80, 110, 10); c.fill();
+  c.strokeStyle='rgba(255,255,255,0.25)'; c.setLineDash([4,4]); drawRoundedRect(c, 370, 170, 60, 90, 8); c.stroke(); c.setLineDash([]);
+  c.fillStyle='#fff'; c.font='900 14px Inter, sans-serif'; c.textAlign='center';
+  c.fillText('STOCK', 400, 290);
+  ftueDrawCard(c, 160, 220, 7, 2, 1.2);
+  c.fillStyle='#ffd166'; c.font='900 16px Inter, sans-serif';
+  c.fillText('Tap stock when stuck', 280, 90);
+  // moving finger
+  const k = (dt % 1800) / 1800;
+  const x = lerp(400, 200, k);
+  c.fillStyle='rgba(255,255,255,0.9)';
+  c.beginPath(); c.arc(x, 220, 10, 0, Math.PI*2); c.fill();
+}
+function ftueDrawStars(c, dt) {
+  c.clearRect(0,0,560,400);
+  const k = (dt % 2400) / 2400;
+  c.fillStyle='#ffd166'; c.font='900 60px Inter, sans-serif'; c.textAlign='center';
+  const scales = [k*3, k*3-1, k*3-2];
+  scales.forEach((s, i) => {
+    const v = clamp(s, 0, 1);
+    if (v <= 0) return;
+    c.save();
+    c.translate(180 + i*100, 200);
+    const sc = easeOutBack(v);
+    c.scale(sc, sc);
+    c.fillText('★', 0, 20);
+    c.restore();
+  });
+  c.fillStyle='#fff'; c.font='800 16px Inter, sans-serif';
+  c.fillText('Score higher → more stars', 280, 320);
+}
+
+/* ============== [JS-19] MIXPANEL + API ============== */
+let iapEnabled = false;
+let mixpanelEnabled = false;
+let mpQueue = [];
+function mp(event, props) {
+  mpQueue.push({ event, properties: props || {} });
+  if (mpQueue.length >= 8) flushMP();
+  scheduleFlush();
+}
+let mpFlushTimer = null;
+function scheduleFlush() {
+  if (mpFlushTimer) return;
+  mpFlushTimer = setTimeout(() => { mpFlushTimer = null; flushMP(); }, 4000);
+}
+async function flushMP() {
+  if (!mpQueue.length) return;
+  if (!mixpanelEnabled) { mpQueue = []; return; }
+  const events = mpQueue.slice();
+  mpQueue = [];
+  try {
+    await fetch('/api/mp/track', {
+      method:'POST',
+      headers: {
+        'content-type':'application/json',
+        'x-telegram-initdata': TG?.initData || ''
+      },
+      body: JSON.stringify({ events })
+    });
+  } catch {}
+}
+async function api(path, body) {
+  const r = await fetch(path, {
+    method:'POST',
+    headers: {
+      'content-type':'application/json',
+      'x-telegram-initdata': TG?.initData || ''
+    },
+    body: JSON.stringify(body || {})
+  });
+  return r.json();
+}
+async function fetchFlags() {
+  try {
+    const r = await fetch('/api/flags'); const j = await r.json();
+    iapEnabled = !!j.iapEnabled; mixpanelEnabled = !!j.mixpanelEnabled;
+  } catch {}
+}
+async function pushHeartbeat() {
+  const ts = Date.now();
+  // streak risk = next UTC midnight
+  const tomorrow = new Date(); tomorrow.setUTCHours(20, 0, 0, 0);
+  const riskAt = tomorrow.getTime();
+  try {
+    await fetch('/api/heartbeat', {
+      method:'POST',
+      headers: { 'content-type':'application/json', 'x-telegram-initdata': TG?.initData || '' },
+      body: JSON.stringify({ lang: state.settings.lang, streak: state.streak, streakRiskAt: riskAt, level: state.maxLevelUnlocked, stars: state.stars, coins: state.coins })
+    });
+  } catch {}
+}
+async function pollPurchases() {
+  try {
+    const r = await fetch('/api/poll-purchases', { headers: { 'x-telegram-initdata': TG?.initData || '' } });
+    const j = await r.json();
+    if (Array.isArray(j.grants)) j.grants.forEach(applyGrant);
+  } catch {}
+}
+function applyGrant(g) {
+  const gr = g.grant || {};
+  if (gr.coins) state.coins += gr.coins | 0;
+  if (gr.wilds) state.boosters.wild += gr.wilds | 0;
+  if (gr.shuffles) state.boosters.shuffle += gr.shuffles | 0;
+  if (gr.undos) state.boosters.undo += gr.undos | 0;
+  if (gr.revives) state.boosters.revive += gr.revives | 0;
+  if (gr.skin) { if (!state.ownedSkins.includes(gr.skin)) state.ownedSkins.push(gr.skin); }
+  if (gr.shieldDays) state.shieldUntil = Date.now() + gr.shieldDays * 86400000;
+  if (gr.battlePassDays) state.battlePassUntil = Date.now() + gr.battlePassDays * 86400000;
+  saveState();
+  renderHUD();
+  toast(t('iap_thanks'));
+}
+
+/* ============== [JS-20] BOOT ============== */
+function applyLang() {
+  document.documentElement.lang = state.settings.lang || 'en';
+  document.documentElement.dir = RTL_LANGS.includes(state.settings.lang) ? 'rtl' : 'ltr';
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const k = el.dataset.i18n; const v = t(k); if (v) el.textContent = v;
+  });
+  document.getElementById('map-title').textContent = t('quest_map');
+  document.getElementById('map-sub').textContent = t('three_peaks_sub');
+}
+function switchTab(name) {
+  document.querySelectorAll('.tab-view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  const v = document.getElementById('view-' + name);
+  const b = document.querySelector('.tab-btn[data-tab="' + name + '"]');
+  if (v) v.classList.add('active');
+  if (b) b.classList.add('active');
+  state.activeTab = name; saveState();
+  if (name === 'shop') renderShop();
+  if (name === 'earn') renderEarn();
+  if (name === 'play') { showMapScreen(); renderMap(); }
+}
+
+function toast(text) {
+  const root = document.getElementById('toast-root');
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.textContent = text;
+  root.appendChild(t);
+  setTimeout(() => t.remove(), 2800);
+}
+
+function wireUI() {
+  document.querySelectorAll('.tab-btn').forEach(b => b.addEventListener('click', () => switchTab(b.dataset.tab)));
+  document.getElementById('btn-settings').addEventListener('click', openSettingsModal);
+  document.getElementById('btn-leave-play').addEventListener('click', openConfirmLeaveModal);
+  document.getElementById('play-fab').addEventListener('click', () => startLevel(state.level || state.maxLevelUnlocked));
+  document.querySelector('.pill.coin .add').addEventListener('click', (e) => { e.stopPropagation(); switchTab('shop'); });
+  document.getElementById('hud-stars').addEventListener('click', () => switchTab('earn'));
+  document.getElementById('hud-coins').addEventListener('click', () => switchTab('shop'));
+}
+
+async function boot() {
+  initTelegram();
+  await fetchFlags();
+  applyLang();
+  wireUI();
+  layoutCanvas();
+  renderHUD();
+  renderMap();
+  switchTab(state.activeTab || 'play');
+  pollPurchases();
+  pushHeartbeat();
+  setInterval(pushHeartbeat, 60000);
+  setInterval(pollPurchases, 45000);
+  if (!state.welcomed || !state.ftueDone) {
+    state.welcomed = true; saveState();
+    setTimeout(startFTUE, 350);
+  }
+  mp('app_open', { lang: state.settings.lang, version: VERSION, level: state.maxLevelUnlocked });
+  flushMP();
+}
+
+boot();
+</script>
+</body>
+</html>

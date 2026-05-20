@@ -1,0 +1,37 @@
+# Dependencies
+node_modules/
+
+# Env / secrets — NEVER commit these
+.env
+.env.*
+*.env
+secrets.json
+
+# Local data (user state, leaderboards, share images)
+data/
+*.sqlite
+*.db
+
+# Research artifacts (downloaded videos, frame extracts)
+tmp-research/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp
+*~
+.idea/
+.vscode/
+
+# Build artifacts (we don't have a build step, but just in case)
+dist/
+build/
+*.log
+npm-debug.log*
+
+# Telegram welcome assets (binary, large; opt-in via .gitkeep if needed)
+# Comment the next line if you want assets/welcome.* tracked.
+# assets/
+
+# Coverage
+coverage/

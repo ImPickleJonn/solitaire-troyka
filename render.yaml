@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: solitaire-troyka
+    runtime: node
+    plan: starter
+    region: oregon
+    buildCommand: npm install
+    startCommand: node server.js
+    autoDeploy: true
+    disk:
+      name: solitaire-troyka-data
+      mountPath: /data
+      sizeGB: 1
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATA_DIR
+        value: /data
+      - key: PUBLIC_DOMAIN
+        fromService:
+          name: solitaire-troyka
+          type: web
+          property: host
+      - key: BOT_TOKEN
+        sync: false
+      - key: MIXPANEL_TOKEN
+        sync: false
+      - key: TELEGRAM_ADMIN_IDS
+        value: "23040617"

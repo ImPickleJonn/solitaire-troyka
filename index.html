@@ -1,0 +1,4366 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no"/>
+<meta name="theme-color" content="#1a0b2e"/>
+<title>Solitaire Troyka</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+/* =========================================================
+   Solitaire Troyka — single-file styles
+   ========================================================= */
+:root{
+  --bg-0:#1a0b2e;
+  --bg-1:#2b1656;
+  --bg-2:#3a1d6a;
+  --accent:#ffd166;
+  --accent-2:#ef476f;
+  --accent-3:#06d6a0;
+  --ink:#fff;
+  --ink-soft:rgba(255,255,255,.72);
+  --ink-dim:rgba(255,255,255,.45);
+  --card-face:#fdfaf3;
+  --card-back-a:#5a2ca0;
+  --card-back-b:#2a0f5a;
+  --tab-h:64px;
+  --safe-top:0px;
+  --safe-bottom:0px;
+  --hud-h:56px;
+  --bar-h:72px;
+  --pill-bg:rgba(255,255,255,.08);
+  --pill-bg-strong:rgba(255,255,255,.16);
+  --shadow-1:0 4px 14px rgba(0,0,0,.35);
+  --shadow-2:0 10px 30px rgba(0,0,0,.5);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
+html,body{margin:0;padding:0;height:100%;overflow:hidden;background:var(--bg-0);color:var(--ink);font-family:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;-webkit-font-smoothing:antialiased;font-feature-settings:"tnum"}
+body{overscroll-behavior:none;touch-action:manipulation}
+button{font-family:inherit;color:inherit;background:none;border:0;cursor:pointer;padding:0;font-weight:600}
+#app{
+  position:fixed;inset:0;
+  background:
+    radial-gradient(120% 80% at 50% -10%, rgba(91,42,160,.95) 0%, rgba(42,15,90,.95) 40%, rgba(20,8,50,1) 80%),
+    linear-gradient(180deg,#1a0b2e 0%, #0b0420 100%);
+  padding-top:var(--safe-top);
+  padding-bottom:calc(var(--safe-bottom) + var(--tab-h));
+  display:flex;flex-direction:column;
+}
+/* sparkles bg */
+#app::before{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background-image:
+    radial-gradient(2px 2px at 10% 18%, rgba(255,255,255,.55), transparent 60%),
+    radial-gradient(1.5px 1.5px at 80% 22%, rgba(255,209,102,.6), transparent 60%),
+    radial-gradient(2px 2px at 25% 70%, rgba(255,255,255,.4), transparent 60%),
+    radial-gradient(1px 1px at 70% 88%, rgba(6,214,160,.5), transparent 60%),
+    radial-gradient(1.5px 1.5px at 50% 40%, rgba(255,255,255,.35), transparent 60%);
+  opacity:.85;
+  animation:twinkle 6s ease-in-out infinite;
+}
+@keyframes twinkle{0%,100%{opacity:.85}50%{opacity:.55}}
+
+/* ---------- topbar ---------- */
+.topbar{
+  position:relative;z-index:5;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:8px 12px 6px;gap:8px;
+}
+.brand{display:flex;align-items:center;gap:6px;font-weight:800;font-size:14px;letter-spacing:.4px}
+.brand .logo{
+  width:28px;height:28px;border-radius:8px;
+  background:linear-gradient(135deg,#ffd166,#ef476f);
+  display:grid;place-items:center;font-size:16px;color:#1a0b2e;
+  box-shadow:var(--shadow-1)
+}
+.hud{display:flex;align-items:center;gap:6px}
+.pill{
+  display:flex;align-items:center;gap:5px;
+  background:var(--pill-bg);
+  border:1px solid rgba(255,255,255,.08);
+  backdrop-filter:blur(6px);
+  border-radius:999px;
+  padding:5px 10px;
+  font-size:12px;font-weight:700;
+}
+.pill .ic{font-size:13px;line-height:1}
+.pill.coin{color:#ffd166}
+.pill.star{color:#fff}
+.pill.streak{color:#ff7a59}
+.pill button.add{
+  width:18px;height:18px;border-radius:50%;
+  background:var(--accent);color:#1a0b2e;
+  font-size:13px;display:grid;place-items:center;margin-left:2px;
+  font-weight:900
+}
+.icon-btn{
+  width:34px;height:34px;border-radius:10px;
+  background:var(--pill-bg);
+  display:grid;place-items:center;font-size:16px;
+  border:1px solid rgba(255,255,255,.08);
+}
+.icon-btn:active{transform:scale(.95)}
+
+/* ---------- main + tabs ---------- */
+main{flex:1;position:relative;overflow:hidden}
+.tab-view{
+  position:absolute;inset:0;
+  display:none;
+  overflow:hidden;
+}
+.tab-view.active{display:flex;flex-direction:column}
+
+/* ---------- map screen ---------- */
+#map-screen{
+  flex:1;position:relative;
+  overflow-y:auto;overflow-x:hidden;
+  scrollbar-width:none;
+}
+#map-screen::-webkit-scrollbar{display:none}
+#map-scroller{
+  position:relative;
+  padding:12px 0 32px;
+}
+.map-header{
+  text-align:center;padding:14px 18px 6px;
+}
+.map-header h2{margin:0;font-size:20px;letter-spacing:.5px}
+.map-header p{margin:4px 0 0;color:var(--ink-soft);font-size:12px}
+.map-path{
+  position:relative;width:100%;
+}
+.map-node{
+  position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  width:88px;height:88px;margin:14px auto;
+  border-radius:24px;
+  background:linear-gradient(180deg, #ffd166 0%, #f59e3b 100%);
+  color:#1a0b2e;box-shadow:0 6px 0 #b97a1c, 0 12px 24px rgba(0,0,0,.45);
+  font-weight:900;
+  transition:transform .15s ease;
+}
+.map-node:active{transform:translateY(2px);box-shadow:0 4px 0 #b97a1c, 0 8px 18px rgba(0,0,0,.45)}
+.map-node.locked{
+  background:linear-gradient(180deg,#3a2c5a,#28204a);
+  color:#7b6ea0;box-shadow:0 4px 0 #1a1130, 0 6px 14px rgba(0,0,0,.4);
+}
+.map-node.current{
+  animation:bob 1.4s ease-in-out infinite;
+  outline:3px solid rgba(255,255,255,.6);outline-offset:3px;
+}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+.map-node .n-num{font-size:22px;line-height:1}
+.map-node .n-stars{font-size:10px;margin-top:3px;letter-spacing:1px;opacity:.85}
+.map-node .lock{font-size:24px}
+.map-node[data-side="L"]{transform:translateX(-72px)}
+.map-node[data-side="R"]{transform:translateX(72px)}
+.map-node[data-side="L"]:active{transform:translateX(-72px) translateY(2px)}
+.map-node[data-side="R"]:active{transform:translateX(72px) translateY(2px)}
+.map-node[data-side="L"].current{transform:translateX(-72px)}
+.map-node[data-side="R"].current{transform:translateX(72px)}
+.map-line{
+  position:absolute;left:50%;width:3px;background:rgba(255,255,255,.18);
+  border-radius:2px;
+}
+
+/* play button at bottom of map */
+#play-fab-wrap{
+  position:fixed;left:0;right:0;
+  bottom:calc(var(--safe-bottom) + var(--tab-h) + 14px);
+  display:flex;justify-content:center;pointer-events:none;z-index:6;
+}
+#play-fab{
+  pointer-events:auto;
+  background:linear-gradient(135deg,#06d6a0,#0fb98a);
+  color:#0a3320;
+  padding:14px 28px;border-radius:999px;
+  font-weight:900;font-size:16px;letter-spacing:.5px;
+  box-shadow:0 6px 0 #057a55, 0 12px 24px rgba(0,0,0,.4);
+  display:flex;align-items:center;gap:8px;
+}
+#play-fab:active{transform:translateY(2px);box-shadow:0 4px 0 #057a55, 0 8px 18px rgba(0,0,0,.4)}
+
+/* ---------- play screen ---------- */
+#play-screen{display:none;flex:1;flex-direction:column;position:relative}
+#play-screen.active{display:flex}
+#play-hud{
+  height:var(--hud-h);min-height:var(--hud-h);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 12px;gap:8px;
+}
+#play-hud .stats{display:flex;align-items:center;gap:6px}
+#play-hud .lvl-pill{
+  background:linear-gradient(135deg,#ffd166,#ef476f);
+  color:#1a0b2e;font-weight:900;padding:6px 10px;border-radius:10px;font-size:12px;letter-spacing:.6px
+}
+#play-hud .score{font-weight:900;font-size:20px}
+#play-hud .target{font-size:11px;color:var(--ink-soft)}
+.combo-dots{
+  flex:1;display:flex;align-items:center;justify-content:center;gap:6px;margin:0 8px;
+  position:relative;height:18px;
+}
+.cdot{
+  width:11px;height:11px;border-radius:50%;
+  background:rgba(255,255,255,.10);
+  border:1px solid rgba(255,255,255,.18);
+  transition:transform .18s cubic-bezier(.18,1.6,.45,.95), background .18s, box-shadow .18s, border-color .18s;
+}
+.cdot.lit{
+  background:linear-gradient(135deg,#06d6a0,#ffd166);
+  border-color:transparent;
+  box-shadow:0 0 8px rgba(255,209,102,.7), inset 0 0 4px rgba(255,255,255,.5);
+  transform:scale(1.25);
+}
+.cdot.tier2{background:linear-gradient(135deg,#ffd166,#ef476f);box-shadow:0 0 10px rgba(255,209,102,.8)}
+.cdot.tier3{background:linear-gradient(135deg,#ef476f,#a83af0);box-shadow:0 0 12px rgba(239,71,111,.8)}
+.cdot.tier4{background:linear-gradient(135deg,#a83af0,#06d6a0);box-shadow:0 0 16px rgba(168,58,240,.9)}
+.combo-mult{
+  position:absolute;right:0;top:50%;transform:translateY(-50%);
+  font-size:11px;font-weight:900;letter-spacing:.4px;color:#ffd166;
+  opacity:0;transition:opacity .2s ease;
+}
+.combo-mult.show{opacity:1}
+#game-canvas{
+  flex:1;width:100%;display:block;
+  background:transparent;
+  touch-action:none;
+}
+#play-bar{
+  height:var(--bar-h);min-height:var(--bar-h);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:6px 12px 14px;gap:10px;
+  position:relative;
+}
+.booster-row{display:flex;gap:8px}
+.booster{
+  position:relative;
+  width:48px;height:54px;border-radius:14px;
+  background:var(--pill-bg-strong);
+  border:1px solid rgba(255,255,255,.1);
+  display:grid;place-items:center;font-size:24px;
+  transition:transform .12s ease;
+}
+.booster:active{transform:scale(.92)}
+.booster .count{
+  position:absolute;right:-4px;top:-4px;
+  min-width:18px;height:18px;border-radius:10px;
+  background:var(--accent);color:#1a0b2e;
+  font-size:10px;font-weight:900;display:grid;place-items:center;padding:0 4px;
+}
+.booster.empty{opacity:.55}
+.booster.empty .count{background:rgba(255,255,255,.2);color:#fff}
+.booster.armed{outline:3px solid var(--accent);outline-offset:2px;animation:pulseArm .8s ease-in-out infinite}
+@keyframes pulseArm{0%,100%{box-shadow:0 0 0 0 rgba(255,209,102,.5)}50%{box-shadow:0 0 0 8px rgba(255,209,102,0)}}
+.stock-pile{
+  position:relative;width:92px;height:130px;
+  display:grid;place-items:center;
+}
+.stock-card-back{
+  position:absolute;width:84px;height:118px;border-radius:11px;
+  background:linear-gradient(135deg,var(--card-back-a),var(--card-back-b));
+  box-shadow:var(--shadow-1);
+  border:2px solid rgba(255,255,255,.15);
+}
+.stock-card-back .pattern{
+  position:absolute;inset:8px;border-radius:5px;
+  border:1.5px dashed rgba(255,255,255,.22);
+}
+.stock-count{
+  position:absolute;bottom:-6px;right:-6px;
+  background:var(--accent);color:#1a0b2e;
+  font-size:11px;font-weight:900;
+  padding:2px 7px;border-radius:10px;
+  box-shadow:var(--shadow-1);
+}
+.waste-pile{position:relative;width:84px;height:118px;filter:drop-shadow(0 0 12px rgba(255,209,102,.25))}
+.combo-callout{
+  position:absolute;left:50%;top:38%;
+  transform:translate(-50%,-50%) scale(.4);opacity:0;
+  font-weight:900;font-size:34px;letter-spacing:1px;
+  text-shadow:0 4px 10px rgba(0,0,0,.6),0 0 16px rgba(255,209,102,.6);
+  pointer-events:none;color:#ffd166;
+  transition:transform .25s cubic-bezier(.18,1.6,.45,.95),opacity .25s ease;
+}
+.combo-callout.show{transform:translate(-50%,-50%) scale(1.15);opacity:1}
+
+/* floating +score popups (canvas-rendered actually, but keep style for tooltip) */
+
+/* ---------- bottom tabs ---------- */
+.bottom-tabs{
+  position:fixed;left:0;right:0;
+  bottom:0;
+  height:calc(var(--safe-bottom) + var(--tab-h));
+  padding-bottom:var(--safe-bottom);
+  display:flex;align-items:stretch;
+  background:rgba(20,8,50,.92);
+  backdrop-filter:blur(10px);
+  border-top:1px solid rgba(255,255,255,.06);
+  z-index:20;
+}
+.tab-btn{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  color:var(--ink-dim);font-size:11px;font-weight:700;letter-spacing:.4px;
+  transition:color .15s ease;
+}
+.tab-btn .ic{font-size:22px;line-height:1}
+.tab-btn.active{color:var(--accent)}
+.tab-btn.active .ic{filter:drop-shadow(0 0 6px rgba(255,209,102,.5))}
+
+/* ---------- shop tab ---------- */
+#view-shop{padding:0}
+#shop-scroll{flex:1;overflow-y:auto;padding:8px 12px 20px}
+#shop-scroll::-webkit-scrollbar{display:none}
+.shop-section-title{font-size:13px;letter-spacing:1.2px;font-weight:800;color:var(--ink-soft);margin:14px 4px 8px;text-transform:uppercase}
+.shop-featured{
+  margin:6px 0 4px;border-radius:18px;
+  background:linear-gradient(135deg,#ffd166 0%,#ef476f 100%);
+  color:#1a0b2e;
+  padding:14px;display:flex;gap:12px;align-items:center;
+  box-shadow:var(--shadow-2);
+}
+.shop-featured .icon{font-size:42px}
+.shop-featured h3{margin:0 0 4px;font-size:16px;font-weight:900}
+.shop-featured .sub{font-size:12px;font-weight:600;opacity:.85}
+.shop-featured .buy{
+  margin-left:auto;background:#1a0b2e;color:#ffd166;
+  border-radius:14px;padding:10px 14px;font-weight:900;font-size:13px;
+  display:flex;align-items:center;gap:4px;
+}
+.shop-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.shop-card{
+  background:var(--pill-bg);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:16px;
+  padding:12px;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;
+  position:relative
+}
+.shop-card .ic{font-size:30px;margin-top:4px}
+.shop-card h4{margin:2px 0 0;font-size:13px;font-weight:800}
+.shop-card .sub{font-size:11px;color:var(--ink-soft);min-height:28px}
+.shop-card .buy{
+  margin-top:6px;background:var(--accent);color:#1a0b2e;
+  border-radius:12px;padding:8px 0;font-weight:900;font-size:13px;width:100%;
+}
+.shop-card.owned .buy{background:rgba(255,255,255,.1);color:var(--ink-soft)}
+
+/* ---------- earn tab ---------- */
+#view-earn{padding:0}
+#earn-scroll{flex:1;overflow-y:auto;padding:8px 12px 20px}
+#earn-scroll::-webkit-scrollbar{display:none}
+.bp-banner{
+  margin:6px 0 8px;border-radius:14px;
+  background:linear-gradient(135deg,#6a3df0,#a83af0);
+  padding:12px;display:flex;justify-content:space-between;align-items:center;
+  box-shadow:var(--shadow-1)
+}
+.bp-banner h4{margin:0;font-size:13px;font-weight:900}
+.bp-banner .days{font-size:11px;opacity:.85}
+.bp-banner button{background:#1a0b2e;color:#ffd166;border-radius:10px;padding:8px 12px;font-weight:900;font-size:12px}
+.chest-card{
+  background:var(--pill-bg);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:16px;padding:12px;margin-bottom:10px;
+}
+.chest-card h4{margin:0 0 8px;font-size:14px;font-weight:800}
+.chest-row{display:flex;gap:6px;justify-content:space-between}
+.chest-cell{
+  flex:1;background:rgba(255,255,255,.04);border-radius:10px;
+  padding:8px 4px;text-align:center;
+  display:flex;flex-direction:column;align-items:center;gap:2px;
+  font-size:10px;font-weight:700;color:var(--ink-soft);
+  border:1px solid transparent;
+  position:relative
+}
+.chest-cell.claimed{background:rgba(6,214,160,.15);border-color:rgba(6,214,160,.4);color:#fff}
+.chest-cell.today{background:rgba(255,209,102,.18);border-color:rgba(255,209,102,.6);color:#fff;animation:pulseChest 1.4s ease-in-out infinite}
+@keyframes pulseChest{0%,100%{box-shadow:0 0 0 0 rgba(255,209,102,.5)}50%{box-shadow:0 0 0 6px rgba(255,209,102,0)}}
+.chest-cell .ic{font-size:18px;margin-top:2px}
+.chest-cell .rw{font-weight:900;color:#ffd166;font-size:11px}
+.chest-claim{
+  margin-top:10px;width:100%;background:var(--accent);color:#1a0b2e;
+  border-radius:12px;padding:10px;font-weight:900;font-size:13px;
+}
+.chest-claim:disabled,.chest-claim.disabled{background:rgba(255,255,255,.1);color:var(--ink-dim)}
+.mission{
+  display:flex;align-items:center;gap:10px;
+  background:var(--pill-bg);border:1px solid rgba(255,255,255,.06);
+  border-radius:14px;padding:10px;margin-bottom:8px;
+}
+.mission .ic{font-size:24px}
+.mission .body{flex:1}
+.mission .body h5{margin:0;font-size:13px;font-weight:800}
+.mission .body .sub{font-size:11px;color:var(--ink-soft);margin-top:2px}
+.mission .reward{font-size:11px;color:#ffd166;font-weight:800;margin-top:2px}
+.mission .btn{
+  background:var(--accent);color:#1a0b2e;
+  padding:8px 12px;border-radius:10px;font-weight:900;font-size:12px;
+}
+.mission .btn.check{background:#3a76ff;color:#fff}
+.mission .btn.done{background:rgba(255,255,255,.1);color:var(--ink-dim)}
+.lb-card{
+  background:var(--pill-bg);border:1px solid rgba(255,255,255,.06);
+  border-radius:14px;padding:10px 12px;margin-top:14px;
+}
+.lb-card h4{margin:0 0 8px;font-size:14px;font-weight:800}
+.lb-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:12px}
+.lb-row:last-child{border-bottom:0}
+.lb-row .rank{width:22px;font-weight:900;color:var(--accent)}
+.lb-row .name{flex:1}
+.lb-row .pts{font-weight:800}
+.lb-row.me{background:rgba(255,209,102,.1);border-radius:8px;padding:6px 8px}
+
+/* ---------- modals ---------- */
+#modal-root{position:fixed;inset:0;z-index:50;display:none;align-items:flex-end;justify-content:center;
+  background:rgba(8,3,22,.6);backdrop-filter:blur(6px)}
+#modal-root.open{display:flex}
+.modal{
+  width:100%;max-width:520px;margin:0 auto;
+  background:linear-gradient(180deg,#2b1656 0%,#1a0b2e 100%);
+  border-radius:24px 24px 0 0;
+  border-top:1px solid rgba(255,255,255,.08);
+  padding:18px 18px calc(18px + var(--safe-bottom));
+  box-shadow:0 -10px 40px rgba(0,0,0,.6);
+  animation:slideUp .25s ease;
+  position:relative;
+}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.modal h3{margin:0 0 6px;font-size:18px;font-weight:900;text-align:center}
+.modal p{margin:4px 0;color:var(--ink-soft);font-size:13px;text-align:center}
+.modal .x{position:absolute;right:12px;top:10px;width:32px;height:32px;border-radius:50%;background:var(--pill-bg);display:grid;place-items:center;font-size:16px}
+.modal .cta-row{display:flex;gap:10px;margin-top:14px}
+.modal .cta{
+  flex:1;background:var(--accent);color:#1a0b2e;
+  border-radius:14px;padding:14px;font-weight:900;font-size:15px;
+}
+.modal .cta.secondary{background:var(--pill-bg);color:var(--ink)}
+.modal .cta.danger{background:var(--accent-2);color:#fff}
+
+.stars-display{display:flex;gap:8px;justify-content:center;margin:12px 0}
+.stars-display .st{font-size:36px;filter:grayscale(1);opacity:.4;transform:scale(.7)}
+.stars-display .st.lit{filter:none;opacity:1;transform:scale(1);animation:starPop .4s ease}
+@keyframes starPop{0%{transform:scale(.2) rotate(-30deg)}60%{transform:scale(1.3) rotate(10deg)}100%{transform:scale(1) rotate(0)}}
+.reward-row{display:flex;gap:8px;justify-content:center;margin:10px 0}
+.reward-chip{
+  background:rgba(255,255,255,.08);border-radius:10px;padding:6px 10px;
+  display:flex;align-items:center;gap:4px;font-size:13px;font-weight:800
+}
+
+/* FTUE coach mark */
+.ftue-canvas-wrap{
+  margin:14px auto;width:100%;max-width:280px;height:200px;
+  background:rgba(0,0,0,.25);border-radius:14px;position:relative;overflow:hidden;
+}
+.ftue-dots{display:flex;gap:6px;justify-content:center;margin-top:8px}
+.ftue-dots .d{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.25)}
+.ftue-dots .d.on{background:var(--accent)}
+
+/* settings */
+.set-row{display:flex;align-items:center;justify-content:space-between;padding:10px 4px;border-bottom:1px solid rgba(255,255,255,.06)}
+.set-row:last-child{border-bottom:0}
+.set-row .lbl{font-size:14px}
+.toggle{
+  width:46px;height:26px;background:rgba(255,255,255,.15);border-radius:14px;position:relative;transition:background .2s
+}
+.toggle.on{background:var(--accent-3)}
+.toggle .dot{position:absolute;top:3px;left:3px;width:20px;height:20px;background:#fff;border-radius:50%;transition:transform .2s}
+.toggle.on .dot{transform:translateX(20px)}
+.lang-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:6px}
+.lang-cell{
+  background:var(--pill-bg);border:1px solid rgba(255,255,255,.06);
+  border-radius:10px;padding:8px;text-align:center;font-size:12px;font-weight:800
+}
+.lang-cell.on{background:var(--accent);color:#1a0b2e;border-color:transparent}
+
+/* ---------- toasts ---------- */
+#toast-root{position:fixed;left:0;right:0;top:calc(var(--safe-top) + 64px);z-index:60;display:flex;flex-direction:column;align-items:center;gap:6px;pointer-events:none}
+.toast{
+  background:rgba(20,8,50,.95);
+  color:#fff;
+  border:1px solid rgba(255,255,255,.1);
+  border-radius:12px;
+  padding:8px 14px;font-size:13px;font-weight:700;
+  box-shadow:var(--shadow-1);
+  animation:toastIn .25s ease, toastOut .3s ease 2.4s forwards;
+  max-width:80%;text-align:center;
+}
+@keyframes toastIn{from{opacity:0;transform:translateY(-12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes toastOut{to{opacity:0;transform:translateY(-12px)}}
+
+/* RTL */
+html[dir="rtl"] .map-node[data-side="L"]{transform:translateX(72px)}
+html[dir="rtl"] .map-node[data-side="R"]{transform:translateX(-72px)}
+
+/* ---------- lives pill ---------- */
+.pill.lives{color:#ff7a7a}
+.pill.lives .timer{font-size:9px;font-weight:700;color:var(--ink-dim);margin-left:2px}
+
+/* ---------- splash screen ---------- */
+#splash{
+  position:fixed;inset:0;z-index:200;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  background:radial-gradient(120% 100% at 50% 0%, rgba(255,209,102,.25) 0%, transparent 60%),
+             radial-gradient(120% 100% at 50% 110%, rgba(168,58,240,.35) 0%, transparent 65%),
+             linear-gradient(180deg,#1a0b2e 0%, #0b0420 100%);
+  opacity:1;transition:opacity .5s ease;
+}
+#splash.gone{opacity:0;pointer-events:none}
+#splash-canvas{width:300px;height:200px;display:block}
+#splash-title{margin-top:-20px;font-size:32px;font-weight:900;letter-spacing:1px;text-shadow:0 6px 18px rgba(0,0,0,.5);
+  background:linear-gradient(135deg,#ffd166,#ef476f);-webkit-background-clip:text;background-clip:text;color:transparent}
+#splash-sub{margin-top:8px;color:var(--ink-soft);font-size:13px;font-weight:700;letter-spacing:1px;animation:tapBlink 1.5s ease-in-out infinite}
+@keyframes tapBlink{0%,100%{opacity:.4}50%{opacity:1}}
+
+/* ---------- mascot ---------- */
+.mascot-bubble{
+  position:absolute;left:12px;top:80px;z-index:10;display:flex;align-items:flex-end;gap:8px;pointer-events:none;opacity:0;transition:opacity .3s ease, transform .3s ease;transform:translateY(8px);
+}
+.mascot-bubble.show{opacity:1;transform:translateY(0)}
+.mascot-canvas{width:54px;height:54px}
+.mascot-text{
+  background:rgba(255,255,255,.92);color:#1a0b2e;
+  border-radius:14px;padding:6px 10px;font-size:11px;font-weight:800;max-width:170px;
+  box-shadow:var(--shadow-1);position:relative;
+}
+.mascot-text::after{content:"";position:absolute;left:-8px;bottom:8px;border:6px solid transparent;border-right-color:rgba(255,255,255,.92)}
+
+/* ---------- world header band ---------- */
+.world-band{
+  position:relative;margin:14px 0 8px;padding:14px 16px;border-radius:18px;overflow:hidden;
+  display:flex;align-items:center;gap:12px;
+  box-shadow:var(--shadow-2);
+}
+.world-band .wb-icon{font-size:42px;filter:drop-shadow(0 4px 8px rgba(0,0,0,.4))}
+.world-band .wb-text{flex:1}
+.world-band .wb-text h3{margin:0;font-size:18px;font-weight:900;letter-spacing:.4px}
+.world-band .wb-text p{margin:2px 0 0;font-size:11px;color:rgba(255,255,255,.8)}
+.world-band .wb-stars{
+  display:flex;align-items:center;gap:4px;background:rgba(0,0,0,.3);padding:6px 10px;border-radius:12px;
+  font-weight:900;font-size:12px;
+}
+.world-band.locked{opacity:.55}
+.world-band.locked .wb-icon{filter:grayscale(.7) brightness(.7)}
+.world-band .chest-btn{
+  position:absolute;right:12px;bottom:-12px;
+  background:linear-gradient(135deg,#ffd166,#ef476f);color:#1a0b2e;
+  padding:6px 14px;border-radius:14px;font-weight:900;font-size:11px;letter-spacing:.5px;
+  box-shadow:0 4px 0 #b97a1c, 0 10px 20px rgba(0,0,0,.4);
+  animation:bob 1.4s ease-in-out infinite;
+}
+
+/* world chooser chip row */
+.world-chips{
+  display:flex;gap:6px;overflow-x:auto;padding:8px 12px 4px;
+  scroll-snap-type:x mandatory;scrollbar-width:none;
+}
+.world-chips::-webkit-scrollbar{display:none}
+.world-chip{
+  flex:0 0 auto;scroll-snap-align:center;
+  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);
+  padding:8px 12px;border-radius:14px;
+  display:flex;align-items:center;gap:6px;
+  font-size:12px;font-weight:800;color:var(--ink-soft);
+  transition:transform .15s, background .15s;
+}
+.world-chip .wic{font-size:18px}
+.world-chip.on{background:linear-gradient(135deg,var(--accent),#ef476f);color:#1a0b2e;border-color:transparent;transform:scale(1.05)}
+.world-chip.locked{opacity:.45}
+.world-chip .ws{font-size:10px;background:rgba(0,0,0,.25);padding:2px 6px;border-radius:8px;color:#fff;font-weight:700}
+.world-chip.on .ws{background:rgba(255,255,255,.3);color:#1a0b2e}
+
+/* S-curve path within a world */
+.s-path{
+  position:relative;width:100%;
+}
+.s-node{
+  position:absolute;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  width:84px;height:84px;
+  border-radius:22px;
+  background:linear-gradient(180deg, #ffd166 0%, #f59e3b 100%);
+  color:#1a0b2e;box-shadow:0 5px 0 #b97a1c, 0 10px 22px rgba(0,0,0,.45);
+  font-weight:900;
+  border:0;cursor:pointer;
+  transition:transform .15s ease;
+}
+.s-node:active{transform:translateY(2px);box-shadow:0 3px 0 #b97a1c, 0 6px 14px rgba(0,0,0,.45)}
+.s-node.locked{
+  background:linear-gradient(180deg,#3a2c5a,#28204a);color:#7b6ea0;
+  box-shadow:0 3px 0 #1a1130, 0 5px 12px rgba(0,0,0,.4);cursor:default;
+}
+.s-node.current{
+  outline:3px solid rgba(255,255,255,.7);outline-offset:3px;
+  animation:bob 1.4s ease-in-out infinite;
+}
+.s-node.boss{
+  background:linear-gradient(180deg,#ef476f 0%, #c92f4d 100%);
+  box-shadow:0 5px 0 #7a1c30, 0 10px 22px rgba(0,0,0,.5);
+  width:96px;height:96px;border-radius:26px;
+}
+.s-node .nnum{font-size:22px;line-height:1}
+.s-node.boss .nnum{font-size:24px;color:#fff}
+.s-node .nstars{font-size:10px;margin-top:3px;letter-spacing:1px;opacity:.85}
+.s-node.boss .nstars{color:#fff}
+.s-node .lock{font-size:24px}
+.s-path-svg{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none}
+.s-chest{
+  position:absolute;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  width:96px;height:96px;border-radius:24px;
+  background:linear-gradient(135deg,#ffd166,#ef476f);color:#1a0b2e;
+  box-shadow:0 6px 0 #b97a1c, 0 12px 30px rgba(0,0,0,.55);
+  font-weight:900;font-size:11px;text-align:center;letter-spacing:.4px;
+  border:0;cursor:pointer;animation:bob 1.2s ease-in-out infinite;
+}
+.s-chest .ci{font-size:32px;line-height:1;margin-bottom:2px}
+.s-chest.locked{background:linear-gradient(135deg,#3a2c5a,#28204a);color:#7b6ea0;box-shadow:0 4px 0 #1a1130;animation:none;cursor:default}
+.world-meta{
+  text-align:center;padding:6px 14px 14px;color:var(--ink-soft);font-size:12px;
+}
+.world-meta strong{color:#fff;font-size:14px}
+.daily-pill{
+  margin:8px 12px 0;padding:12px;
+  background:linear-gradient(135deg,#06d6a0,#118ab2);
+  color:#fff;border-radius:14px;
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  box-shadow:var(--shadow-1)
+}
+.daily-pill h4{margin:0;font-size:13px;font-weight:900}
+.daily-pill p{margin:1px 0 0;font-size:11px;opacity:.85}
+.daily-pill button{background:#1a0b2e;color:#06d6a0;padding:8px 12px;border-radius:10px;font-weight:900;font-size:12px}
+
+/* ---------- pre-level screen ---------- */
+.pre-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:10px 0}
+.pre-card{
+  background:var(--pill-bg-strong);border:1px solid rgba(255,255,255,.08);
+  border-radius:14px;padding:10px 6px;text-align:center;
+  position:relative;transition:transform .12s;
+}
+.pre-card:active{transform:scale(.95)}
+.pre-card.equipped{outline:3px solid var(--accent);outline-offset:-3px;background:rgba(255,209,102,.18)}
+.pre-card .ic{font-size:30px}
+.pre-card .nm{font-size:12px;font-weight:800;margin-top:2px}
+.pre-card .sb{font-size:10px;color:var(--ink-soft);margin-top:2px;min-height:22px}
+.pre-card .cnt{position:absolute;right:-4px;top:-4px;background:var(--accent);color:#1a0b2e;font-size:10px;font-weight:900;padding:2px 6px;border-radius:8px}
+.pre-card .cnt.empty{background:rgba(255,255,255,.15);color:#fff}
+.target-row{display:flex;justify-content:space-around;background:rgba(255,255,255,.04);border-radius:12px;padding:10px;margin:8px 0}
+.target-row .tg{text-align:center}
+.target-row .tg .lbl{font-size:10px;color:var(--ink-soft);font-weight:700}
+.target-row .tg .val{font-size:16px;font-weight:900;margin-top:2px}
+
+/* ---------- postcards UI ---------- */
+.postcard-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:8px 0 14px}
+.postcard-cell{
+  position:relative;border-radius:14px;overflow:hidden;
+  background:linear-gradient(135deg,#2a0f5a,#1a0b2e);
+  padding-bottom:8px;cursor:pointer;
+}
+.postcard-cell.locked{opacity:.5}
+.postcard-cell canvas{width:100%;height:120px;display:block;background:rgba(0,0,0,.18)}
+.postcard-cell .pc-title{font-size:12px;font-weight:900;margin:6px 8px 0;text-align:center}
+.postcard-cell .pc-progress{font-size:10px;text-align:center;color:var(--ink-soft);margin-top:2px}
+.postcard-cell .pc-progress .bar{display:block;width:80%;height:5px;margin:4px auto 0;background:rgba(255,255,255,.08);border-radius:3px;overflow:hidden}
+.postcard-cell .pc-progress .bar .fill{display:block;height:100%;background:linear-gradient(90deg,#06d6a0,#ffd166)}
+.postcard-cell.complete{border:2px solid #ffd166;box-shadow:0 0 20px rgba(255,209,102,.4)}
+
+/* ---------- achievements grid ---------- */
+.ach-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:6px 0 14px}
+.ach-cell{
+  position:relative;background:var(--pill-bg);border:1px solid rgba(255,255,255,.06);
+  border-radius:12px;padding:8px 4px;text-align:center;
+  display:flex;flex-direction:column;align-items:center;gap:2px;
+}
+.ach-cell.unlocked{background:rgba(6,214,160,.12);border-color:rgba(6,214,160,.35)}
+.ach-cell.claimed{background:rgba(255,209,102,.12);border-color:rgba(255,209,102,.4)}
+.ach-cell .ic{font-size:24px;filter:grayscale(1);opacity:.5;transition:all .3s}
+.ach-cell.unlocked .ic, .ach-cell.claimed .ic{filter:none;opacity:1}
+.ach-cell .nm{font-size:10px;font-weight:800;line-height:1.2;min-height:24px}
+.ach-cell .rw{font-size:10px;font-weight:900;color:#ffd166;margin-top:2px}
+.ach-cell.unlocked .rw::after{content:" ↳ tap"}
+.ach-cell.claimed::after{content:"✓";position:absolute;top:4px;right:4px;color:#ffd166;font-size:11px;font-weight:900}
+
+/* ---------- stats panel ---------- */
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:6px 0 14px}
+.stat-cell{background:var(--pill-bg);border-radius:12px;padding:10px;text-align:center}
+.stat-cell .v{font-size:20px;font-weight:900;color:#ffd166}
+.stat-cell .l{font-size:11px;color:var(--ink-soft);margin-top:2px}
+
+/* ---------- big achievement toast ---------- */
+.ach-popup{
+  position:fixed;left:50%;top:30%;transform:translate(-50%,-50%) scale(.3);
+  background:linear-gradient(135deg,#ffd166,#ef476f);color:#1a0b2e;
+  padding:14px 18px;border-radius:18px;font-weight:900;
+  box-shadow:0 10px 40px rgba(0,0,0,.5),0 0 80px rgba(255,209,102,.3);
+  display:flex;align-items:center;gap:10px;z-index:80;
+  opacity:0;transition:opacity .25s ease, transform .25s cubic-bezier(.18,1.6,.45,.95);
+  pointer-events:none;
+}
+.ach-popup.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
+.ach-popup .ic{font-size:32px}
+.ach-popup .t{font-size:11px;letter-spacing:.6px;opacity:.7}
+.ach-popup .nm{font-size:15px}
+
+/* ---------- coin rain overlay ---------- */
+.coin-rain-canvas{position:absolute;inset:0;pointer-events:none;z-index:30}
+
+/* ---------- world chest modal ---------- */
+.world-chest-art{
+  margin:10px auto 6px;width:160px;height:140px;display:block;
+  filter:drop-shadow(0 10px 30px rgba(255,209,102,.4));
+}
+
+/* ---------- mode tabs (endless/daily) ---------- */
+.mode-tabs{display:flex;gap:6px;justify-content:center;margin:8px 0 0;padding:0 12px}
+.mode-tab{
+  flex:1;background:var(--pill-bg);border-radius:10px;padding:6px 8px;
+  text-align:center;font-size:11px;font-weight:800;color:var(--ink-soft);
+  border:1px solid rgba(255,255,255,.06);
+}
+.mode-tab.on{background:linear-gradient(135deg,#06d6a0,#118ab2);color:#fff;border-color:transparent}
+
+/* ---------- chain ribbon (top during gameplay) ---------- */
+.chain-ribbon{
+  position:absolute;left:50%;top:8px;transform:translateX(-50%);
+  display:none;font-size:10px;font-weight:900;letter-spacing:1px;
+  background:rgba(0,0,0,.45);color:#ffd166;padding:3px 10px;border-radius:8px;
+  pointer-events:none;
+}
+.chain-ribbon.on{display:block;animation:chainPulse .25s ease}
+@keyframes chainPulse{from{transform:translateX(-50%) scale(.7)}to{transform:translateX(-50%) scale(1)}}
+
+</style>
+</head>
+<body>
+<div id="app">
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo">♣</div>
+      <div>Solitaire Troyka</div>
+    </div>
+    <div class="hud">
+      <div class="pill lives" id="hud-lives" title="lives"><span class="ic">❤️</span><span id="hud-lives-n">5</span><span class="timer" id="hud-lives-timer"></span></div>
+      <div class="pill streak" id="hud-streak" title="streak"><span class="ic">🔥</span><span id="hud-streak-n">0</span></div>
+      <div class="pill star" id="hud-stars"><span class="ic">⭐</span><span id="hud-stars-n">0</span></div>
+      <div class="pill coin" id="hud-coins"><span class="ic">🪙</span><span id="hud-coins-n">0</span><button class="add" data-act="open-shop">+</button></div>
+      <button class="icon-btn" id="btn-settings" title="Settings">⚙️</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- SHOP -->
+    <section class="tab-view" id="view-shop">
+      <div id="shop-scroll"></div>
+    </section>
+
+    <!-- PLAY (map + game) -->
+    <section class="tab-view active" id="view-play">
+      <div id="map-screen">
+        <div class="map-header">
+          <h2 id="map-title">Quest Map</h2>
+          <p id="map-sub">Three peaks. Endless combos.</p>
+        </div>
+        <div id="map-scroller" class="map-path"></div>
+      </div>
+      <div id="play-screen">
+        <div id="play-hud">
+          <div class="stats">
+            <div class="lvl-pill" id="play-lvl">L 1</div>
+            <div>
+              <div class="score" id="play-score">0</div>
+              <div class="target" id="play-target">/ 5000</div>
+            </div>
+          </div>
+          <div class="combo-dots" id="combo-dots-wrap">
+            <div class="cdot" data-i="1"></div>
+            <div class="cdot" data-i="2"></div>
+            <div class="cdot" data-i="3"></div>
+            <div class="cdot" data-i="4"></div>
+            <div class="cdot" data-i="5"></div>
+            <div class="cdot" data-i="6"></div>
+            <div class="cdot" data-i="7"></div>
+            <div class="combo-mult" id="combo-mult"></div>
+          </div>
+          <button class="icon-btn" id="btn-leave-play" title="Leave">✕</button>
+        </div>
+        <div class="chain-ribbon" id="chain-ribbon"></div>
+        <div class="mascot-bubble" id="mascot-bubble">
+          <canvas class="mascot-canvas" id="mascot-canvas" width="108" height="108"></canvas>
+          <div class="mascot-text" id="mascot-text">Tap a card ±1 from the waste!</div>
+        </div>
+        <canvas id="game-canvas"></canvas>
+        <canvas class="coin-rain-canvas" id="coin-rain"></canvas>
+        <div id="play-bar">
+          <div class="booster-row" id="booster-row"></div>
+          <div class="waste-pile" id="waste-pile"></div>
+          <div class="stock-pile" id="stock-pile">
+            <div class="stock-card-back"><div class="pattern"></div></div>
+            <div class="stock-count" id="stock-count">0</div>
+          </div>
+        </div>
+        <div class="combo-callout" id="combo-callout"></div>
+      </div>
+      <div id="play-fab-wrap"><button id="play-fab"><span>▶</span><span id="play-fab-lbl">Play Level 1</span></button></div>
+    </section>
+
+    <!-- EARN -->
+    <section class="tab-view" id="view-earn">
+      <div id="earn-scroll"></div>
+    </section>
+  </main>
+
+  <nav class="bottom-tabs">
+    <button class="tab-btn" data-tab="shop"><span class="ic">🛒</span><span data-i18n="tab_shop">Shop</span></button>
+    <button class="tab-btn active" data-tab="play"><span class="ic">🎴</span><span data-i18n="tab_play">Play</span></button>
+    <button class="tab-btn" data-tab="earn"><span class="ic">🎁</span><span data-i18n="tab_earn">Earn</span></button>
+  </nav>
+
+  <div id="modal-root"></div>
+  <div id="toast-root"></div>
+  <div class="ach-popup" id="ach-popup"><div class="ic">🏆</div><div><div class="t">ACHIEVEMENT</div><div class="nm">First Victory</div></div></div>
+
+  <div id="splash">
+    <canvas id="splash-canvas" width="600" height="400"></canvas>
+    <div id="splash-title">Solitaire Troyka</div>
+    <div id="splash-sub">Tap to play</div>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* =========================================================
+   Solitaire Troyka — single-file game
+   ========================================================= */
+
+/* ============== [JS-01] CONSTANTS ============== */
+const VERSION = '0.2.0';
+const CARD_W = 56;
+const CARD_H = 80;
+const CARD_R = 8;            // card corner radius
+const STACK_DY = 28;          // vertical stack offset
+const STACK_DX = 6;
+const COMBO_TIERS = [
+  { chain: 0,  mult: 1, label: '' },
+  { chain: 3,  mult: 2, label: 'NICE!' },
+  { chain: 5,  mult: 3, label: 'GREAT!' },
+  { chain: 7,  mult: 5, label: 'AMAZING!' },
+  { chain: 10, mult: 10, label: 'INCREDIBLE!' }
+];
+const BOOSTER_LIST = ['wild','shuffle','undo','peek','hammer'];
+const BOOSTER_ICON = { wild:'🃏', shuffle:'🔀', undo:'↶', revive:'❤️', peek:'👁', hammer:'🔨', magic7:'🎰', plus5:'➕5' };
+const BOOSTER_COST = { wild:300, shuffle:200, undo:150, peek:120, hammer:400, magic7:250, plus5:500 };
+const PRE_BOOSTERS = ['scissors','wildDrop','stockBoost'];
+const PRE_BOOSTER_COST = { scissors:300, wildDrop:500, stockBoost:200 };
+const PRE_BOOSTER_ICON = { scissors:'✂️', wildDrop:'🌟', stockBoost:'📦' };
+const LIVES_MAX = 5;
+const LIVES_REGEN_MS = 30 * 60 * 1000;       // 30 min per life
+const LIVES_REFILL_COST = 90;                 // 90 stars buys 5 lives
+const SKU_DISPLAY = {
+  coins_small:   { ic:'🪙', stars:99,  titleKey:'sku_coins_small_t', subKey:'sku_coins_small_s' },
+  coins_big:     { ic:'💰', stars:399, titleKey:'sku_coins_big_t',   subKey:'sku_coins_big_s' },
+  coins_mega:    { ic:'🏆', stars:750, titleKey:'sku_coins_mega_t',  subKey:'sku_coins_mega_s' },
+  starter_pack:  { ic:'🎁', stars:199, titleKey:'sku_starter_t',     subKey:'sku_starter_s', featured:true },
+  revive:        { ic:'❤️', stars:30,  titleKey:'sku_revive_t',      subKey:'sku_revive_s' },
+  shuffle_pack:  { ic:'🔀', stars:60,  titleKey:'sku_shuf_t',        subKey:'sku_shuf_s' },
+  wild_pack:     { ic:'🃏', stars:60,  titleKey:'sku_wild_t',        subKey:'sku_wild_s' },
+  undo_pack:     { ic:'↶',  stars:50,  titleKey:'sku_undo_t',        subKey:'sku_undo_s' },
+  streak_shield: { ic:'🛡️', stars:99, titleKey:'sku_shield_t',      subKey:'sku_shield_s' },
+  skin_royal:    { ic:'👑', stars:150, titleKey:'sku_skin_royal_t',  subKey:'sku_skin_royal_s' },
+  skin_forest:   { ic:'🌲', stars:150, titleKey:'sku_skin_forest_t', subKey:'sku_skin_forest_s' },
+  battle_pass:   { ic:'🎖️', stars:500, titleKey:'sku_bp_t',          subKey:'sku_bp_s' }
+};
+const CHEST_REWARDS = [25, 50, 75, 100, 150, 250, 500];
+const SUITS = ['♠','♥','♦','♣'];
+const SUIT_COLOR = { '♠':'#1a0b2e', '♣':'#1a0b2e', '♥':'#c92f4d', '♦':'#c92f4d' };
+const RANK_LABEL = ['','A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+const THEMES = {
+  classic: { feltA:'rgba(255,255,255,.02)', feltB:'rgba(0,0,0,.18)' },
+  royal:   { feltA:'rgba(255,209,102,.06)', feltB:'rgba(0,0,0,.25)' },
+  forest:  { feltA:'rgba(6,214,160,.06)',   feltB:'rgba(0,0,0,.22)' }
+};
+
+/* ============== [JS-02] i18n ============== */
+const STRINGS = {
+  en: {
+    tab_shop:'Shop', tab_play:'Play', tab_earn:'Earn',
+    quest_map:'Quest Map', three_peaks_sub:'Three peaks. Endless combos.',
+    play_level:'Play Level {n}', level:'Level {n}',
+    target:'Target', score:'Score', stars:'Stars', coins:'Coins',
+    win_title:'Cleared!', lose_title:'Out of cards',
+    win_sub:'Glorious chain work.', lose_sub:'Want one more shot?',
+    btn_next:'Next', btn_retry:'Retry', btn_map:'Map', btn_revive:'Revive',
+    welcome_t:'Welcome to Solitaire Troyka', welcome_s:'Three peaks. Endless combos. Tap cards ±1 from the waste card to chain them up.',
+    ftue1_t:'Match ±1', ftue1_b:'Tap any card whose rank is one above or below the waste card. Suit does not matter.',
+    ftue2_t:'Wrap around', ftue2_b:'Ace connects to King and Two. Long chains feel magical.',
+    ftue3_t:'Combo it up', ftue3_b:'Each tap adds to your streak. 3 in a row = x2 score. 10 in a row = x10.',
+    ftue4_t:'Draw from stock', ftue4_b:'Tap the stock when stuck — it breaks your combo, so chain hard first.',
+    ftue5_t:'Earn stars', ftue5_b:'Beat the score target to win. Score more to earn 2 or 3 stars and unlock crates.',
+    booster_wild:'Wild', booster_shuffle:'Shuffle', booster_undo:'Undo',
+    armed_tap_card:'Tap a card to use', armed_tap_waste:'Tap waste to swap with a wild',
+    not_enough:'Not enough!', no_undo:'Nothing to undo', no_match:'No legal play',
+    new_record:'New best!', combo_break:'combo break',
+    sku_coins_small_t:'Coin Bag', sku_coins_small_s:'1,200 coins',
+    sku_coins_big_t:'Big Sack', sku_coins_big_s:'5,400 coins',
+    sku_coins_mega_t:'Mega Chest', sku_coins_mega_s:'12,000 coins',
+    sku_starter_t:'Starter Pack', sku_starter_s:'1,500 coins + 3 wilds + 3 shuffles + 5 undos + Royal skin',
+    sku_revive_t:'Revive', sku_revive_s:'One extra life',
+    sku_shuf_t:'Shuffle Pack', sku_shuf_s:'5 shuffles',
+    sku_wild_t:'Wild Pack', sku_wild_s:'5 wild cards',
+    sku_undo_t:'Undo Pack', sku_undo_s:'7 undos',
+    sku_shield_t:'Streak Shield', sku_shield_s:'Protect streak 7 days',
+    sku_skin_royal_t:'Royal Skin', sku_skin_royal_s:'Gold felt + crown back',
+    sku_skin_forest_t:'Forest Skin', sku_skin_forest_s:'Mint felt + ivy back',
+    sku_bp_t:'Battle Pass', sku_bp_s:'30 days · 2× rewards',
+    shop_featured:'Best Value', shop_packs:'Coin Packs', shop_boosters:'Boosters', shop_skins:'Themes', shop_other:'More',
+    bp_active:'Battle Pass active · {n}d', bp_inactive:'Activate Battle Pass',
+    chest_title:'Daily Login Chest', chest_claim:'Claim Day {n}', chest_claimed:'Claimed · come back tomorrow',
+    miss_title:'Daily Missions',
+    miss_play3:'Play 3 levels today', miss_play3_sub:'Auto on level finish',
+    miss_chain5:'Get a 5-chain', miss_chain5_sub:'Auto on chain',
+    miss_share:'Share with a friend', miss_share_sub:'Tap to share',
+    miss_follow:'Follow our channel', miss_follow_sub:'Tap to open',
+    miss_streak7:'Reach a 7-day streak', miss_streak7_sub:'Auto on streak day 7',
+    mission_go:'GO', mission_check:'CHECK', mission_claim:'CLAIM', mission_done:'DONE',
+    lb_title:'Top Players',
+    settings:'Settings', sound:'Sound', haptics:'Haptics', language:'Language', skin:'Table Skin',
+    privacy:'Privacy Policy', terms:'Terms of Use', how_to_play:'🎓 How to Play',
+    confirm_leave_t:'Leave level?', confirm_leave_s:'Your progress on this level will be lost.',
+    btn_leave:'Leave', btn_stay:'Stay',
+    iap_unavail:'Purchases unavailable — open inside Telegram.',
+    iap_thanks:'Thanks! Reward delivered.',
+    locked:'Locked', unlock_at_stars:'Unlock with {n} ⭐',
+    coming_soon:'More worlds coming soon!',
+    lvl_complete:'Level Complete', lvl_failed:'Almost!',
+    bonus:'Bonus', total:'Total', stock_left:'Stock left',
+    combo_nice:'NICE!', combo_great:'GREAT!', combo_amazing:'AMAZING!', combo_incredible:'INCREDIBLE!',
+    intro_lock:'New: Locked Cards. Clear neighbors to unlock them.',
+    intro_mult:'New: Multiplier Cards. Gold tiles double your score.',
+    intro_treasure:'New: Treasure Cards. Coin tiles drop bonus coins.',
+    intro_wild:'New: Wild Stock. Some stock cards match anything.',
+    intro_memory:'New: Memory Pieces. Reveal hidden pieces to complete a postcard.',
+    intro_postcard:'New: Postcards. Collect 5 memory pieces to unlock a scene.',
+    world1_t:'Royal Garden', world1_s:'Where the quest begins',
+    world2_t:'Forest of Cards', world2_s:'Through emerald paths',
+    world3_t:'Ocean Depths', world3_s:'Currents and corals',
+    world4_t:'Castle Heights', world4_s:'Banners on the keep',
+    world5_t:'Crystal Caves', world5_s:'Final mysteries',
+    lives:'Lives', lives_full:'Lives full', next_life_in:'Next life in {m}m',
+    out_of_lives_t:'Out of Lives', out_of_lives_s:'Wait for a life or refill now.',
+    refill_lives:'Refill 5 lives · ⭐ {n}', wait_for_life:'Wait',
+    booster_select_t:'Choose Boosters', booster_select_s:'Equip up to 3 boosters before you play.',
+    booster_scissors:'Scissors', booster_scissors_s:'Remove 3 random cards',
+    booster_wilddrop:'Wild Drop',  booster_wilddrop_s:'+3 wilds in stock',
+    booster_stockboost:'Stock Boost', booster_stockboost_s:'+5 stock cards',
+    booster_peek:'Peek', booster_peek_s:'See the next 3 stock cards',
+    booster_hammer:'Hammer', booster_hammer_s:'Destroy any card',
+    booster_magic7:'Magic 7s', booster_magic7_s:'Clear all 7s',
+    booster_plus5:'+5 Cards', booster_plus5_s:'Add 5 cards to stock',
+    btn_start:'Start', btn_continue:'Continue',
+    pc_rose_gate:'Rose Gate', pc_whisperwood:'Whisperwood', pc_coral_reef:'Coral Reef', pc_throne_room:'Throne Room', pc_crystal_heart:'Crystal Heart',
+    postcards_title:'Postcards', postcards_progress:'{n}/5 pieces',
+    achievements_title:'Achievements', achievement_unlocked:'Achievement!',
+    ach_first_win:'First Victory', ach_cleared_10:'10 Levels Cleared', ach_cleared_25:'25 Levels Cleared', ach_cleared_50:'50 Levels Cleared', ach_cleared_60:'Quest Complete!',
+    ach_chain_5:'5-Chain Combo', ach_chain_10:'10-Chain Combo', ach_chain_15:'15-Chain Combo',
+    ach_stars_30:'30 Stars Earned', ach_stars_90:'90 Stars Earned', ach_stars_180:'180 Stars Earned',
+    ach_streak_3:'3-Day Streak', ach_streak_7:'7-Day Streak', ach_streak_30:'30-Day Streak',
+    ach_postcard_1:'First Postcard', ach_postcard_all:'All Postcards',
+    ach_perfect_5:'5 Perfect Levels', ach_perfect_25:'25 Perfect Levels',
+    daily_t:'Daily Challenge', daily_s:'Same puzzle for everyone today',
+    daily_play:'Play Daily', daily_done:'Done today',
+    world_clear_t:'World Complete!', world_clear_s:'Open the chest for your reward.',
+    world_open_chest:'Open Chest', skin_unlocked:'New Skin Unlocked!',
+    stats_title:'Stats', stats_games:'Games Played', stats_best_score:'Best Score', stats_best_chain:'Best Chain', stats_cards_played:'Cards Played', stats_postcards:'Postcards', stats_perfects:'Perfect Levels',
+    splash_tap:'Tap to play'
+  },
+  ru: {
+    tab_shop:'Магазин', tab_play:'Игра', tab_earn:'Награды',
+    quest_map:'Карта приключений', three_peaks_sub:'Три пика. Бесконечные комбо.',
+    play_level:'Уровень {n}', level:'Уровень {n}',
+    target:'Цель', score:'Очки', stars:'Звёзды', coins:'Монеты',
+    win_title:'Чисто!', lose_title:'Карты кончились',
+    win_sub:'Великолепная цепочка!', lose_sub:'Ещё одна попытка?',
+    btn_next:'Дальше', btn_retry:'Заново', btn_map:'Карта', btn_revive:'Возродить',
+    welcome_t:'Добро пожаловать в Solitaire Troyka', welcome_s:'Три пика. Бесконечные комбо. Касайся карт на ±1 от карты в отбое, чтобы строить цепочки.',
+    ftue1_t:'Совпадение ±1', ftue1_b:'Касайся карты, чей ранг на 1 больше или меньше карты в отбое. Масть не важна.',
+    ftue2_t:'Замкнутый круг', ftue2_b:'Туз связывает Короля и Двойку. Длинные цепочки — это магия.',
+    ftue3_t:'Стройте комбо', ftue3_b:'Каждое касание — плюс к серии. 3 подряд — x2 к очкам. 10 подряд — x10.',
+    ftue4_t:'Колода-резерв', ftue4_b:'Если ход не находится — снимай карту из колоды. Серия сбросится, поэтому копи цепочки заранее.',
+    ftue5_t:'Заработай звёзды', ftue5_b:'Дойди до цели по очкам — выиграй. Превыси её — получи 2 или 3 звезды.',
+    booster_wild:'Джокер', booster_shuffle:'Перемешать', booster_undo:'Отмена',
+    armed_tap_card:'Коснись карты, чтобы применить', armed_tap_waste:'Коснись отбоя, чтобы заменить на джокера',
+    not_enough:'Недостаточно!', no_undo:'Нечего отменять', no_match:'Нет хода',
+    new_record:'Новый рекорд!', combo_break:'серия сброшена',
+    sku_coins_small_t:'Мешочек монет', sku_coins_small_s:'1 200 монет',
+    sku_coins_big_t:'Большой кошель', sku_coins_big_s:'5 400 монет',
+    sku_coins_mega_t:'Мега-сундук', sku_coins_mega_s:'12 000 монет',
+    sku_starter_t:'Стартовый набор', sku_starter_s:'1 500 монет + 3 джокера + 3 перемешивания + 5 отмен + скин Royal',
+    sku_revive_t:'Возрождение', sku_revive_s:'+1 жизнь',
+    sku_shuf_t:'Перемешивания', sku_shuf_s:'5 перемешиваний',
+    sku_wild_t:'Джокеры', sku_wild_s:'5 джокеров',
+    sku_undo_t:'Отмены', sku_undo_s:'7 отмен',
+    sku_shield_t:'Щит серии', sku_shield_s:'Защита серии на 7 дней',
+    sku_skin_royal_t:'Скин Royal', sku_skin_royal_s:'Золотое сукно',
+    sku_skin_forest_t:'Скин Forest', sku_skin_forest_s:'Мятное сукно',
+    sku_bp_t:'Боевой пропуск', sku_bp_s:'30 дней · x2 награды',
+    shop_featured:'Лучшая цена', shop_packs:'Монеты', shop_boosters:'Бустеры', shop_skins:'Скины', shop_other:'Ещё',
+    bp_active:'Боевой пропуск · {n}д', bp_inactive:'Активировать',
+    chest_title:'Ежедневный сундук', chest_claim:'День {n}', chest_claimed:'Получено · приходи завтра',
+    miss_title:'Ежедневные задания',
+    miss_play3:'Сыграй 3 уровня сегодня', miss_play3_sub:'Авто',
+    miss_chain5:'Сделай цепочку из 5', miss_chain5_sub:'Авто',
+    miss_share:'Поделись с другом', miss_share_sub:'Нажми, чтобы поделиться',
+    miss_follow:'Подпишись на канал', miss_follow_sub:'Нажми, чтобы открыть',
+    miss_streak7:'Достигни серии 7 дней', miss_streak7_sub:'Авто',
+    mission_go:'ВПЕРЁД', mission_check:'ПРОВЕРИТЬ', mission_claim:'ПОЛУЧИТЬ', mission_done:'ГОТОВО',
+    lb_title:'Лидеры',
+    settings:'Настройки', sound:'Звук', haptics:'Вибро', language:'Язык', skin:'Скин стола',
+    privacy:'Политика', terms:'Условия', how_to_play:'🎓 Как играть',
+    confirm_leave_t:'Выйти из уровня?', confirm_leave_s:'Прогресс на уровне сбросится.',
+    btn_leave:'Выйти', btn_stay:'Остаться',
+    iap_unavail:'Покупки недоступны — открой в Telegram.',
+    iap_thanks:'Спасибо! Награда выдана.',
+    locked:'Заблокировано', unlock_at_stars:'Откроется за {n} ⭐',
+    coming_soon:'Скоро новые миры!',
+    lvl_complete:'Уровень пройден', lvl_failed:'Чуть-чуть!',
+    bonus:'Бонус', total:'Итого', stock_left:'Остаток',
+    combo_nice:'КЛАСС!', combo_great:'ОТЛИЧНО!', combo_amazing:'ВАУ!', combo_incredible:'НЕВЕРОЯТНО!',
+    intro_lock:'Новое: Запертые карты. Очисти соседей, чтобы открыть.',
+    intro_mult:'Новое: Множители. Золотые тайлы удваивают очки.',
+    intro_treasure:'Новое: Сокровища. Сундучки дают бонусные монеты.',
+    intro_wild:'Новое: Дикие в колоде. Некоторые карты-резерва подойдут к любой.',
+    intro_memory:'Новое: Фрагменты воспоминаний. Открой их и собери открытку.',
+    intro_postcard:'Новое: Открытки. Собери 5 фрагментов, чтобы открыть сцену.',
+    world1_t:'Королевский сад', world1_s:'Где начинается путь',
+    world2_t:'Лес карт', world2_s:'Изумрудные тропы',
+    world3_t:'Глубины океана', world3_s:'Кораллы и течения',
+    world4_t:'Замковые высоты', world4_s:'Знамёна на стенах',
+    world5_t:'Хрустальные пещеры', world5_s:'Последние тайны',
+    lives:'Жизни', lives_full:'Жизни полные', next_life_in:'След. жизнь через {m}м',
+    out_of_lives_t:'Жизни закончились', out_of_lives_s:'Подожди или пополни сейчас.',
+    refill_lives:'5 жизней · ⭐ {n}', wait_for_life:'Подождать',
+    booster_select_t:'Выбери бустеры', booster_select_s:'До 3 бустеров перед игрой.',
+    booster_scissors:'Ножницы', booster_scissors_s:'Убрать 3 случайные карты',
+    booster_wilddrop:'Поток джокеров', booster_wilddrop_s:'+3 джокера в колоду',
+    booster_stockboost:'Доп. колода', booster_stockboost_s:'+5 карт в резерв',
+    booster_peek:'Подсмотр', booster_peek_s:'Видеть следующие 3 карты',
+    booster_hammer:'Молот', booster_hammer_s:'Убрать любую карту',
+    booster_magic7:'Магия 7', booster_magic7_s:'Убрать все 7-ки',
+    booster_plus5:'+5 карт', booster_plus5_s:'Добавить 5 карт в резерв',
+    btn_start:'Старт', btn_continue:'Продолжить',
+    pc_rose_gate:'Розовые врата', pc_whisperwood:'Шептатор леса', pc_coral_reef:'Коралловый риф', pc_throne_room:'Тронный зал', pc_crystal_heart:'Хрустальное сердце',
+    postcards_title:'Открытки', postcards_progress:'{n}/5 фрагментов',
+    achievements_title:'Достижения', achievement_unlocked:'Достижение!',
+    ach_first_win:'Первая победа', ach_cleared_10:'10 уровней', ach_cleared_25:'25 уровней', ach_cleared_50:'50 уровней', ach_cleared_60:'Квест завершён!',
+    ach_chain_5:'Серия 5', ach_chain_10:'Серия 10', ach_chain_15:'Серия 15',
+    ach_stars_30:'30 звёзд', ach_stars_90:'90 звёзд', ach_stars_180:'180 звёзд',
+    ach_streak_3:'3 дня подряд', ach_streak_7:'7 дней подряд', ach_streak_30:'30 дней подряд',
+    ach_postcard_1:'Первая открытка', ach_postcard_all:'Все открытки',
+    ach_perfect_5:'5 идеальных', ach_perfect_25:'25 идеальных',
+    daily_t:'Дневной вызов', daily_s:'Сегодня одна головоломка для всех',
+    daily_play:'Сыграть', daily_done:'Сделано сегодня',
+    world_clear_t:'Мир пройден!', world_clear_s:'Открой сундук — твоя награда.',
+    world_open_chest:'Открыть сундук', skin_unlocked:'Открыт новый скин!',
+    stats_title:'Статистика', stats_games:'Игр сыграно', stats_best_score:'Лучший счёт', stats_best_chain:'Лучшая серия', stats_cards_played:'Карт сыграно', stats_postcards:'Открытки', stats_perfects:'Идеальные',
+    splash_tap:'Нажми, чтобы играть'
+  },
+  es: { tab_shop:'Tienda', tab_play:'Jugar', tab_earn:'Premios', quest_map:'Mapa', play_level:'Nivel {n}', welcome_t:'Bienvenido', combo_nice:'GENIAL!', combo_great:'GRANDE!', combo_amazing:'INCREÍBLE!', combo_incredible:'BRUTAL!' },
+  pt: { tab_shop:'Loja', tab_play:'Jogar', tab_earn:'Recompensas', quest_map:'Mapa', play_level:'Nível {n}', welcome_t:'Bem-vindo', combo_nice:'BOM!', combo_great:'ÓTIMO!', combo_amazing:'INCRÍVEL!', combo_incredible:'INACREDITÁVEL!' },
+  fr: { tab_shop:'Boutique', tab_play:'Jouer', tab_earn:'Récompenses', quest_map:'Carte', play_level:'Niveau {n}', welcome_t:'Bienvenue', combo_nice:'SUPER!', combo_great:'GÉNIAL!', combo_amazing:'INCROYABLE!', combo_incredible:'EXTRAORDINAIRE!' },
+  de: { tab_shop:'Shop', tab_play:'Spielen', tab_earn:'Belohnungen', quest_map:'Karte', play_level:'Level {n}', welcome_t:'Willkommen', combo_nice:'GUT!', combo_great:'KLASSE!', combo_amazing:'GENIAL!', combo_incredible:'UNGLAUBLICH!' },
+  uk: { tab_shop:'Магазин', tab_play:'Гра', tab_earn:'Нагороди', quest_map:'Карта', play_level:'Рівень {n}', welcome_t:'Вітаємо', combo_nice:'КРУТО!', combo_great:'ВІДМІННО!', combo_amazing:'НЕЙМОВІРНО!', combo_incredible:'НЕРЕАЛЬНО!' },
+  nl: { tab_shop:'Winkel', tab_play:'Spelen', tab_earn:'Beloningen', quest_map:'Kaart', play_level:'Level {n}' },
+  it: { tab_shop:'Negozio', tab_play:'Gioca', tab_earn:'Premi', quest_map:'Mappa', play_level:'Livello {n}' },
+  sv: { tab_shop:'Butik', tab_play:'Spela', tab_earn:'Belöningar', quest_map:'Karta', play_level:'Nivå {n}' },
+  pl: { tab_shop:'Sklep', tab_play:'Graj', tab_earn:'Nagrody', quest_map:'Mapa', play_level:'Poziom {n}' },
+  tr: { tab_shop:'Mağaza', tab_play:'Oyna', tab_earn:'Ödüller', quest_map:'Harita', play_level:'Seviye {n}' },
+  ar: { tab_shop:'المتجر', tab_play:'العب', tab_earn:'المكافآت', quest_map:'الخريطة', play_level:'المستوى {n}' },
+  he: { tab_shop:'חנות', tab_play:'שחק', tab_earn:'פרסים', quest_map:'מפה', play_level:'שלב {n}' },
+  hi: { tab_shop:'दुकान', tab_play:'खेलें', tab_earn:'इनाम', quest_map:'मानचित्र', play_level:'स्तर {n}' },
+  id: { tab_shop:'Toko', tab_play:'Main', tab_earn:'Hadiah', quest_map:'Peta', play_level:'Level {n}' },
+  vi: { tab_shop:'Cửa hàng', tab_play:'Chơi', tab_earn:'Phần thưởng', quest_map:'Bản đồ', play_level:'Cấp {n}' },
+  zh: { tab_shop:'商店', tab_play:'开始', tab_earn:'奖励', quest_map:'地图', play_level:'第{n}关' },
+  ko: { tab_shop:'상점', tab_play:'플레이', tab_earn:'보상', quest_map:'지도', play_level:'레벨 {n}' },
+  ja: { tab_shop:'ショップ', tab_play:'プレイ', tab_earn:'リワード', quest_map:'マップ', play_level:'レベル {n}' }
+};
+const SUPPORTED_LANGS = Object.keys(STRINGS);
+const RTL_LANGS = ['ar','he'];
+function t(key, params) {
+  const lang = state.settings.lang || 'en';
+  let s = (STRINGS[lang] && STRINGS[lang][key]) || STRINGS.en[key] || key;
+  if (params) for (const k of Object.keys(params)) s = s.replace('{' + k + '}', params[k]);
+  return s;
+}
+
+/* ============== [JS-03] STATE + PERSISTENCE ============== */
+const LS_KEY = 'solitaire-troyka.v1';
+const DEFAULT_STATE = {
+  v: VERSION,
+  uid: null, handle: '',
+  settings: { lang:'en', sound:true, haptics:true, theme:'classic' },
+  coins: 250,
+  stars: 0,
+  level: 1,
+  maxLevelUnlocked: 1,
+  lives: LIVES_MAX, livesRefillAt: 0,
+  streak: 0,
+  lastPlayedYMD: '',
+  shieldUntil: 0,
+  battlePassUntil: 0,
+  boosters: { wild: 2, shuffle: 2, undo: 3, peek: 2, hammer: 1, magic7: 0, plus5: 1, revive: 1 },
+  pre: { scissors:1, wildDrop:1, stockBoost:1 },
+  ownedSkins: ['classic'],
+  activeSkin: 'classic',
+  starsPerLevel: {},
+  bestScorePerLevel: {},
+  welcomed: false, ftueDone: false,
+  chestDay: 1, chestClaimedYMD: '',
+  missions: {},
+  gamesPlayedToday: 0, gamesPlayedYMD: '',
+  totalGames: 0, totalChains5: 0, totalCardsPlayed: 0, bigChainSeen: false,
+  bestChain: 0, bestScore: 0,
+  worldsClaimed: {},       // worldId -> true once chest claimed
+  introsSeen: {},          // lock/mult/treasure/wild/memory/postcard
+  memoryPieces: 0,
+  postcards: {},           // id -> { pieces:0, complete:false, claimedAt:0 }
+  achievements: {},        // id -> { claimed:true, claimedAt }
+  dailyBest: {},           // ymd -> best score in daily mode
+  dailyDoneYMD: '',
+  splashSeen: false,
+  activeTab: 'play'
+};
+let state = loadState();
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return JSON.parse(JSON.stringify(DEFAULT_STATE));
+    const s = JSON.parse(raw);
+    // shallow merge with defaults so new fields don't crash
+    const merged = JSON.parse(JSON.stringify(DEFAULT_STATE));
+    for (const k of Object.keys(s)) merged[k] = s[k];
+    for (const k of Object.keys(DEFAULT_STATE.settings || {})) if (merged.settings[k] === undefined) merged.settings[k] = DEFAULT_STATE.settings[k];
+    for (const k of Object.keys(DEFAULT_STATE.boosters || {})) if (merged.boosters[k] === undefined) merged.boosters[k] = DEFAULT_STATE.boosters[k];
+    if (!merged.pre) merged.pre = {};
+    for (const k of Object.keys(DEFAULT_STATE.pre || {})) if (merged.pre[k] === undefined) merged.pre[k] = DEFAULT_STATE.pre[k];
+    if (!merged.introsSeen) merged.introsSeen = {};
+    if (!merged.postcards) merged.postcards = {};
+    if (!merged.achievements) merged.achievements = {};
+    if (!merged.worldsClaimed) merged.worldsClaimed = {};
+    if (!merged.dailyBest) merged.dailyBest = {};
+    if (merged.lives === undefined) merged.lives = LIVES_MAX;
+    if (!merged.activeWorld) merged.activeWorld = 1;
+    return merged;
+  } catch (e) { return JSON.parse(JSON.stringify(DEFAULT_STATE)); }
+}
+function saveState() {
+  try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch {}
+}
+function ymd(d) { d = d || new Date(); return d.toISOString().slice(0,10); }
+
+/* ============== [JS-04] TELEGRAM ============== */
+const TG = (typeof window !== 'undefined' && window.Telegram && window.Telegram.WebApp) ? window.Telegram.WebApp : null;
+function initTelegram() {
+  if (!TG) return;
+  try {
+    TG.ready();
+    TG.expand();
+    if (TG.disableVerticalSwipes) TG.disableVerticalSwipes();
+    if (TG.setHeaderColor) TG.setHeaderColor('#1a0b2e');
+    if (TG.setBackgroundColor) TG.setBackgroundColor('#1a0b2e');
+    const u = TG.initDataUnsafe?.user;
+    if (u) {
+      state.uid = String(u.id);
+      state.handle = u.username || u.first_name || '';
+      if (!state.settings.lang || state.settings.lang === 'en') {
+        const lc = (u.language_code || '').slice(0,2).toLowerCase();
+        if (SUPPORTED_LANGS.includes(lc)) state.settings.lang = lc;
+      }
+    }
+    applyTelegramSafeArea();
+    if (TG.onEvent) TG.onEvent('viewportChanged', applyTelegramSafeArea);
+  } catch (e) { console.warn('TG init', e); }
+}
+function applyTelegramSafeArea() {
+  let top = 0, bottom = 0;
+  try {
+    if (TG?.contentSafeAreaInset) { top = TG.contentSafeAreaInset.top|0; bottom = TG.contentSafeAreaInset.bottom|0; }
+    if (!top && TG?.safeAreaInset) top = TG.safeAreaInset.top|0;
+  } catch {}
+  document.documentElement.style.setProperty('--safe-top', top + 'px');
+  document.documentElement.style.setProperty('--safe-bottom', bottom + 'px');
+}
+function haptic(kind) {
+  if (!state.settings.haptics) return;
+  try {
+    if (TG?.HapticFeedback) {
+      if (kind === 'impact') TG.HapticFeedback.impactOccurred('light');
+      else if (kind === 'heavy') TG.HapticFeedback.impactOccurred('medium');
+      else if (kind === 'success') TG.HapticFeedback.notificationOccurred('success');
+      else if (kind === 'warn') TG.HapticFeedback.notificationOccurred('warning');
+      else if (kind === 'err') TG.HapticFeedback.notificationOccurred('error');
+    }
+  } catch {}
+}
+
+/* ============== [JS-05] PRNG + UTILS ============== */
+function mulberry32(seed) {
+  return function() {
+    let t = (seed += 0x6D2B79F5) | 0;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function shuffle(arr, rng) {
+  rng = rng || Math.random;
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+function clamp(v,a,b){ return v<a?a:v>b?b:v; }
+function lerp(a,b,t){ return a+(b-a)*t; }
+function easeOutCubic(t){ t = clamp(t,0,1); const f = 1 - t; return 1 - f*f*f; }
+function easeOutBack(t){ const c = 1.70158; const f = t - 1; return 1 + (c+1)*f*f*f + c*f*f; }
+function rand(a,b){ return a + Math.random()*(b-a); }
+
+/* ============== [JS-06] LEVEL DEFINITIONS ============== */
+/* Each level has a layout function generating relative card positions, plus modifiers.
+   Coordinates are normalized: x in [0..1] across playable width, y in [0..1] downward.
+   The render layer maps these to canvas pixels with safe padding.
+*/
+const LAYOUTS = {
+  // Single small peak: 1+2+3+4 = 10 cards. Bottom row face-up. Genuine "you can't lose this" Level-1 shape.
+  easyPeak(opts) {
+    const out = [];
+    let id = 0;
+    const rows = [0.10, 0.19, 0.28, 0.44];
+    const widths = [1, 2, 3, 4];
+    rows.forEach((y, ri) => {
+      const w = widths[ri];
+      const startX = 0.5 - (w - 1) * 0.10;
+      for (let i = 0; i < w; i++) {
+        out.push({ id:id++, x: startX + i * 0.20, y, layer: rows.length - 1 - ri, faceDown: ri < rows.length - 1 });
+      }
+    });
+    return out;
+  },
+  // Two-peak: 1+2+3+4 × 2 = 20 cards. L2 step-up.
+  easyTwin(opts) {
+    const out = [];
+    let id = 0;
+    const peakXs = [0.27, 0.73];
+    const rows = [0.08, 0.17, 0.26, 0.42];
+    peakXs.forEach(px => {
+      out.push({ id:id++, x:px, y:rows[0], layer:3, faceDown:false });
+      out.push({ id:id++, x:px-0.07, y:rows[1], layer:2, faceDown:true });
+      out.push({ id:id++, x:px+0.07, y:rows[1], layer:2, faceDown:true });
+      out.push({ id:id++, x:px-0.12, y:rows[2], layer:1, faceDown:true });
+      out.push({ id:id++, x:px,      y:rows[2], layer:1, faceDown:true });
+      out.push({ id:id++, x:px+0.12, y:rows[2], layer:1, faceDown:true });
+      for (let i = 0; i < 4; i++) {
+        out.push({ id:id++, x:px - 0.18 + i*0.12, y:rows[3], layer:0, faceDown:false });
+      }
+    });
+    return out;
+  },
+  tripeak3(opts) {
+    // 28 cards: 3 peaks + 6 + 9 + 10
+    // Rows tightened so upper layers only show top ~35% of each card (real-tripeaks overlap).
+    const out = [];
+    const rows = [0.04, 0.13, 0.22, 0.40];
+    const peakXs = [0.18, 0.50, 0.82];
+    let id = 0;
+    // peaks (layer 0)
+    peakXs.forEach((px,i) => out.push({ id:id++, x:px, y:rows[0], layer:0, faceDown:false, peakIndex:i }));
+    // layer 1: 2 cards under each peak
+    peakXs.forEach((px,i) => {
+      out.push({ id:id++, x:px-0.06, y:rows[1], layer:1, faceDown:true });
+      out.push({ id:id++, x:px+0.06, y:rows[1], layer:1, faceDown:true });
+    });
+    // layer 2: 3 cards under each peak (sharing edges between peaks)
+    peakXs.forEach((px,i) => {
+      out.push({ id:id++, x:px-0.10, y:rows[2], layer:2, faceDown:true });
+      out.push({ id:id++, x:px,      y:rows[2], layer:2, faceDown:true });
+      out.push({ id:id++, x:px+0.10, y:rows[2], layer:2, faceDown:true });
+    });
+    // layer 3: bottom row of 10 cards spanning across
+    for (let i = 0; i < 10; i++) {
+      out.push({ id:id++, x:0.08 + i*0.092, y:rows[3], layer:3, faceDown:false });
+    }
+    return out;
+  },
+  diamond(opts) {
+    // 24 cards in diamond shape: rows of 1,3,5,5,5,3,1 with overlap = 24
+    const out = [];
+    const ys = [0.04, 0.14, 0.24, 0.34, 0.44];
+    const widths = [1, 3, 5, 4, 3];
+    let id = 0;
+    ys.forEach((y, row) => {
+      const w = widths[row];
+      const layer = ys.length - 1 - row;
+      const startX = 0.5 - (w - 1) * 0.07;
+      for (let i = 0; i < w; i++) {
+        out.push({ id:id++, x: startX + i * 0.14, y, layer, faceDown: row > 0 && row < ys.length - 1 });
+      }
+    });
+    return out;
+  },
+  twinPeak(opts) {
+    // two pyramids, 20 cards
+    const out = [];
+    let id = 0;
+    const peakXs = [0.28, 0.72];
+    const rows = [0.06, 0.15, 0.24, 0.42];
+    peakXs.forEach(px => {
+      out.push({ id:id++, x:px, y:rows[0], layer:0, faceDown:false });
+      out.push({ id:id++, x:px-0.06, y:rows[1], layer:1, faceDown:true });
+      out.push({ id:id++, x:px+0.06, y:rows[1], layer:1, faceDown:true });
+      out.push({ id:id++, x:px-0.10, y:rows[2], layer:2, faceDown:true });
+      out.push({ id:id++, x:px,      y:rows[2], layer:2, faceDown:true });
+      out.push({ id:id++, x:px+0.10, y:rows[2], layer:2, faceDown:true });
+    });
+    for (let i = 0; i < 8; i++) {
+      out.push({ id:id++, x: 0.12 + i * 0.108, y: rows[3], layer:3, faceDown:false });
+    }
+    return out;
+  },
+  fan(opts) {
+    // crescent fan, 22 cards in arc
+    const out = [];
+    const N = 22;
+    let id = 0;
+    for (let i = 0; i < N; i++) {
+      const t = i / (N - 1);
+      const angle = -Math.PI * 0.85 + t * Math.PI * 0.7;
+      const r = 0.42;
+      const x = 0.5 + Math.cos(angle) * r;
+      const y = 0.50 + Math.sin(angle) * r * 0.7;
+      const layer = (i < 4 || i > N - 5) ? 0 : (i % 3 === 0 ? 1 : 2);
+      out.push({ id:id++, x, y, layer, faceDown: layer >= 2 });
+    }
+    return out;
+  },
+  ring(opts) {
+    // ring of 16 cards around a 4-card center
+    const out = [];
+    let id = 0;
+    const N = 16;
+    for (let i = 0; i < N; i++) {
+      const a = (i / N) * Math.PI * 2 - Math.PI / 2;
+      const x = 0.5 + Math.cos(a) * 0.34;
+      const y = 0.28 + Math.sin(a) * 0.22;
+      out.push({ id:id++, x, y, layer:0, faceDown:false });
+    }
+    // center cluster (4 cards stacked)
+    out.push({ id:id++, x:0.42, y:0.30, layer:1, faceDown:true });
+    out.push({ id:id++, x:0.58, y:0.30, layer:1, faceDown:true });
+    out.push({ id:id++, x:0.50, y:0.20, layer:1, faceDown:true });
+    out.push({ id:id++, x:0.50, y:0.40, layer:1, faceDown:true });
+    return out;
+  },
+  pyramid(opts) {
+    // single 5-row pyramid (Pyramid solitaire shape), 15 cards
+    const out = [];
+    let id = 0;
+    for (let row = 0; row < 5; row++) {
+      const w = row + 1;
+      const layer = 4 - row;
+      const startX = 0.5 - (w - 1) * 0.07;
+      for (let i = 0; i < w; i++) {
+        out.push({ id:id++, x: startX + i * 0.14, y: 0.08 + row * 0.10, layer, faceDown: row < 4 });
+      }
+    }
+    // extra base row for play surface
+    for (let i = 0; i < 9; i++) {
+      out.push({ id:id++, x: 0.08 + i * 0.105, y: 0.62, layer:9, faceDown:false });
+    }
+    return out;
+  },
+  crown(opts) {
+    // 5 short towers on a base, ~24 cards
+    const out = [];
+    let id = 0;
+    const towerXs = [0.16, 0.32, 0.50, 0.68, 0.84];
+    towerXs.forEach((tx, i) => {
+      const h = (i === 2) ? 4 : (i % 2 === 0 ? 2 : 3);
+      for (let r = 0; r < h; r++) {
+        out.push({ id:id++, x:tx, y:0.10 + (h - 1 - r) * 0.08, layer:r, faceDown:r < h - 1 });
+      }
+    });
+    for (let i = 0; i < 10; i++) {
+      out.push({ id:id++, x: 0.08 + i * 0.093, y: 0.55, layer:9, faceDown:false });
+    }
+    return out;
+  },
+  hourglass(opts) {
+    // wide top, narrow middle, wide bottom; 22 cards
+    const out = [];
+    let id = 0;
+    const rows = [
+      { y:0.06, n:6, layer:0 },
+      { y:0.18, n:4, layer:1 },
+      { y:0.30, n:2, layer:2 },
+      { y:0.42, n:4, layer:1 },
+      { y:0.54, n:6, layer:0 }
+    ];
+    rows.forEach(r => {
+      const startX = 0.5 - (r.n - 1) * 0.07;
+      for (let i = 0; i < r.n; i++) {
+        out.push({ id:id++, x:startX + i*0.14, y:r.y, layer:r.layer, faceDown:r.layer >= 1 });
+      }
+    });
+    return out;
+  },
+  wave(opts) {
+    // sine wave, 18 cards across 2 rows
+    const out = [];
+    let id = 0;
+    const N = 9;
+    for (let i = 0; i < N; i++) {
+      const t = i / (N - 1);
+      const x = 0.08 + t * 0.84;
+      const y1 = 0.20 + Math.sin(t * Math.PI * 2) * 0.10;
+      const y2 = 0.40 + Math.sin(t * Math.PI * 2 + Math.PI) * 0.10;
+      out.push({ id:id++, x, y:y1, layer: (i%2===0)?1:0, faceDown: (i%2===0) });
+      out.push({ id:id++, x, y:y2, layer: (i%2===1)?1:0, faceDown: (i%2===1) });
+    }
+    return out;
+  },
+  butterfly(opts) {
+    // two diamond wings + central body, 24 cards
+    const out = [];
+    let id = 0;
+    // left wing
+    const wingL = [
+      [0.10,0.10],[0.18,0.16],[0.26,0.22],[0.18,0.28],[0.10,0.34],
+      [0.22,0.40],[0.14,0.46]
+    ];
+    wingL.forEach((p,i) => out.push({ id:id++, x:p[0], y:p[1], layer:i<2?0:1, faceDown:i>=2 }));
+    // right wing
+    const wingR = [
+      [0.90,0.10],[0.82,0.16],[0.74,0.22],[0.82,0.28],[0.90,0.34],
+      [0.78,0.40],[0.86,0.46]
+    ];
+    wingR.forEach((p,i) => out.push({ id:id++, x:p[0], y:p[1], layer:i<2?0:1, faceDown:i>=2 }));
+    // body
+    for (let i = 0; i < 5; i++) {
+      out.push({ id:id++, x:0.50, y:0.10 + i*0.10, layer:0, faceDown:false });
+    }
+    // base row
+    for (let i = 0; i < 5; i++) {
+      out.push({ id:id++, x:0.30 + i*0.10, y:0.62, layer:5, faceDown:false });
+    }
+    return out;
+  },
+  castle(opts) {
+    // central tower + flanking towers + ramparts, ~24 cards
+    const out = [];
+    let id = 0;
+    // central tower (5 high)
+    for (let r = 0; r < 5; r++) out.push({ id:id++, x:0.50, y:0.06+(4-r)*0.08, layer:r, faceDown:r<4 });
+    // left tower (3)
+    for (let r = 0; r < 3; r++) out.push({ id:id++, x:0.28, y:0.14+(2-r)*0.08, layer:r, faceDown:r<2 });
+    // right tower
+    for (let r = 0; r < 3; r++) out.push({ id:id++, x:0.72, y:0.14+(2-r)*0.08, layer:r, faceDown:r<2 });
+    // ramparts (left and right)
+    for (let i = 0; i < 3; i++) out.push({ id:id++, x:0.10 + i*0.06, y:0.42, layer:0, faceDown:false });
+    for (let i = 0; i < 3; i++) out.push({ id:id++, x:0.78 + i*0.06, y:0.42, layer:0, faceDown:false });
+    // base
+    for (let i = 0; i < 9; i++) out.push({ id:id++, x:0.08 + i*0.105, y:0.55, layer:9, faceDown:false });
+    return out;
+  },
+  heart(opts) {
+    // heart shape using parametric curve, 20 cards
+    const out = [];
+    let id = 0;
+    const N = 20;
+    for (let i = 0; i < N; i++) {
+      const t = i / N * Math.PI * 2;
+      const sx = 16 * Math.pow(Math.sin(t), 3);
+      const sy = -(13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t));
+      const x = 0.5 + sx / 40;
+      const y = 0.30 + sy / 40;
+      const layer = (i % 3 === 0) ? 0 : 1;
+      out.push({ id:id++, x, y, layer, faceDown: layer === 1 });
+    }
+    return out;
+  },
+  snowflake(opts) {
+    // 6-fold star, 24 cards
+    const out = [];
+    let id = 0;
+    out.push({ id:id++, x:0.5, y:0.30, layer:0, faceDown:false });
+    for (let arm = 0; arm < 6; arm++) {
+      const ang = (arm / 6) * Math.PI * 2;
+      for (let i = 1; i <= 3; i++) {
+        const r = i * 0.10;
+        const x = 0.5 + Math.cos(ang) * r;
+        const y = 0.30 + Math.sin(ang) * r * 0.75;
+        out.push({ id:id++, x, y, layer: i === 3 ? 0 : 1, faceDown: i < 3 });
+      }
+    }
+    // bottom row
+    for (let i = 0; i < 5; i++) out.push({ id:id++, x:0.20+i*0.15, y:0.62, layer:5, faceDown:false });
+    return out;
+  },
+  tree(opts) {
+    // christmas-tree triangles stacked, 26 cards
+    const out = [];
+    let id = 0;
+    const tiers = [ {y:0.06,n:1}, {y:0.14,n:3}, {y:0.22,n:5}, {y:0.30,n:7}, {y:0.40,n:5}, {y:0.50,n:3} ];
+    tiers.forEach((tr, ti) => {
+      const startX = 0.5 - (tr.n - 1) * 0.07;
+      for (let i = 0; i < tr.n; i++) {
+        out.push({ id:id++, x:startX + i*0.14, y:tr.y, layer:tiers.length-1-ti, faceDown: ti > 0 && ti < tiers.length - 1 });
+      }
+    });
+    // trunk
+    out.push({ id:id++, x:0.46, y:0.58, layer:0, faceDown:false });
+    out.push({ id:id++, x:0.54, y:0.58, layer:0, faceDown:false });
+    return out;
+  },
+  star(opts) {
+    // 5-point star, 25 cards
+    const out = [];
+    let id = 0;
+    out.push({ id:id++, x:0.5, y:0.28, layer:0, faceDown:false });
+    for (let i = 0; i < 10; i++) {
+      const a = (i / 10) * Math.PI * 2 - Math.PI / 2;
+      const r = (i % 2 === 0) ? 0.18 : 0.09;
+      const x = 0.5 + Math.cos(a) * r;
+      const y = 0.28 + Math.sin(a) * r * 0.85;
+      out.push({ id:id++, x, y, layer: (i%2===0) ? 0 : 1, faceDown: (i%2===1) });
+    }
+    // base + ramp
+    for (let i = 0; i < 8; i++) out.push({ id:id++, x:0.10+i*0.11, y:0.56, layer:0, faceDown:false });
+    for (let i = 0; i < 6; i++) out.push({ id:id++, x:0.18+i*0.13, y:0.66, layer:0, faceDown:false });
+    return out;
+  }
+};
+
+const WORLDS = [
+  { id:1, key:'royal_garden',   range:[1,12],  theme:'gold',    icon:'🌹', accent:'#ffd166', sky:['#5a2ca0','#ffd166'], chestCoins:300,  chestStars:24, chestSkin:null },
+  { id:2, key:'forest_cards',   range:[13,24], theme:'emerald', icon:'🍃', accent:'#06d6a0', sky:['#1a4d2e','#06d6a0'], chestCoins:500,  chestStars:24, chestSkin:'forest' },
+  { id:3, key:'ocean_depths',   range:[25,36], theme:'ocean',   icon:'🌊', accent:'#118ab2', sky:['#073b4c','#06aed5'], chestCoins:700,  chestStars:24, chestSkin:'ocean' },
+  { id:4, key:'castle_heights', range:[37,48], theme:'castle',  icon:'🏰', accent:'#ef476f', sky:['#3a1d6a','#ef476f'], chestCoins:1000, chestStars:24, chestSkin:'castle' },
+  { id:5, key:'crystal_caves',  range:[49,60], theme:'crystal', icon:'💎', accent:'#a83af0', sky:['#1a0b2e','#a83af0'], chestCoins:1500, chestStars:30, chestSkin:'crystal' }
+];
+
+const LEVELS = [
+  // ============ WORLD 1 — Royal Garden ============
+  // L1-3 are deliberately "you can't lose this": tiny tableau, fat stock, low par. Disney-Solitaire-style tutorial ramp.
+  { id:1,  world:1, layout:'easyPeak',  stock:20, par:500,   gold:1500, perfect:3000,  intro:'basic',   mods:{} },
+  { id:2,  world:1, layout:'easyPeak',  stock:18, par:800,   gold:2000, perfect:3500,  mods:{} },
+  { id:3,  world:1, layout:'easyTwin',  stock:22, par:1200,  gold:2800, perfect:4500,  mods:{} },
+  { id:4,  world:1, layout:'easyTwin',  stock:20, par:1800,  gold:3500, perfect:5500,  intro:'lock',    mods:{ lockCount:1 } },
+  { id:5,  world:1, layout:'pyramid',   stock:22, par:2400,  gold:4500, perfect:6500,  mods:{ lockCount:1 } },
+  { id:6,  world:1, layout:'tripeak3',  stock:24, par:3000,  gold:5500,  perfect:8000,  mods:{ lockCount:1 } },
+  { id:7,  world:1, layout:'fan',       stock:22, par:3500,  gold:6000,  perfect:9000,  intro:'mult', mods:{ multCount:2 } },
+  { id:8,  world:1, layout:'ring',      stock:22, par:4000,  gold:7000,  perfect:10000, mods:{ multCount:2 } },
+  { id:9,  world:1, layout:'diamond',   stock:20, par:4500,  gold:8000,  perfect:11500, mods:{ multCount:2, lockCount:1 } },
+  { id:10, world:1, layout:'wave',      stock:22, par:5500,  gold:9500,  perfect:13500, intro:'treasure', mods:{ treasureCount:2, multCount:1 } },
+  { id:11, world:1, layout:'butterfly', stock:22, par:6500,  gold:11000, perfect:15500, mods:{ treasureCount:2, multCount:2 } },
+  { id:12, world:1, layout:'castle',    stock:22, par:8000,  gold:13000, perfect:18000, boss:true, mods:{ treasureCount:2, multCount:3, lockCount:1 } },
+  // ============ WORLD 2 — Forest of Cards ============
+  { id:13, world:2, layout:'heart',     stock:22, par:9500,  gold:16000, perfect:21000, intro:'wild', mods:{ wildStock:2, multCount:1 } },
+  { id:14, world:2, layout:'tree',      stock:22, par:10000, gold:17000, perfect:22000, mods:{ wildStock:2, lockCount:2, multCount:1 } },
+  { id:15, world:2, layout:'snowflake', stock:22, par:10500, gold:17500, perfect:23000, mods:{ lockCount:3, treasureCount:1 } },
+  { id:16, world:2, layout:'tripeak3',  stock:20, par:11000, gold:18000, perfect:24000, mods:{ lockCount:3, multCount:2 } },
+  { id:17, world:2, layout:'twinPeak',  stock:20, par:11500, gold:18500, perfect:24500, mods:{ lockCount:3, multCount:2, treasureCount:1 } },
+  { id:18, world:2, layout:'fan',       stock:22, par:12000, gold:19000, perfect:25000, mods:{ lockCount:2, multCount:3, treasureCount:1 } },
+  { id:19, world:2, layout:'butterfly', stock:22, par:12500, gold:20000, perfect:26000, mods:{ wildStock:1, lockCount:3, multCount:2 } },
+  { id:20, world:2, layout:'diamond',   stock:20, par:13000, gold:20500, perfect:27000, mods:{ wildStock:2, lockCount:2, multCount:3 } },
+  { id:21, world:2, layout:'crown',     stock:22, par:13500, gold:21000, perfect:28000, mods:{ lockCount:3, multCount:3, treasureCount:1 } },
+  { id:22, world:2, layout:'ring',      stock:20, par:14000, gold:22000, perfect:29000, mods:{ wildStock:2, multCount:3 } },
+  { id:23, world:2, layout:'hourglass', stock:22, par:14500, gold:23000, perfect:30000, mods:{ lockCount:3, multCount:2, treasureCount:2 } },
+  { id:24, world:2, layout:'tree',      stock:20, par:15000, gold:24000, perfect:31500, boss:true, mods:{ wildStock:2, lockCount:3, multCount:3, treasureCount:1 } },
+  // ============ WORLD 3 — Ocean Depths ============
+  { id:25, world:3, layout:'wave',      stock:24, par:15500, gold:25000, perfect:33000, intro:'memory', mods:{ memoryPieces:2, wildStock:2, treasureCount:2 } },
+  { id:26, world:3, layout:'butterfly', stock:22, par:16000, gold:26000, perfect:34000, mods:{ memoryPieces:2, treasureCount:3, multCount:2 } },
+  { id:27, world:3, layout:'ring',      stock:22, par:16500, gold:26500, perfect:35000, mods:{ wildStock:3, treasureCount:3, lockCount:2 } },
+  { id:28, world:3, layout:'wave',      stock:22, par:17000, gold:27000, perfect:36000, mods:{ treasureCount:4, multCount:2, lockCount:2 } },
+  { id:29, world:3, layout:'fan',       stock:22, par:17500, gold:27500, perfect:36500, mods:{ memoryPieces:1, treasureCount:3, wildStock:2 } },
+  { id:30, world:3, layout:'heart',     stock:22, par:18000, gold:28000, perfect:37000, mods:{ wildStock:3, multCount:3, treasureCount:2 } },
+  { id:31, world:3, layout:'snowflake', stock:22, par:18500, gold:29000, perfect:38000, mods:{ treasureCount:3, lockCount:3, multCount:2 } },
+  { id:32, world:3, layout:'diamond',   stock:20, par:19000, gold:30000, perfect:39000, mods:{ wildStock:2, memoryPieces:1, multCount:3 } },
+  { id:33, world:3, layout:'tripeak3',  stock:20, par:19500, gold:30500, perfect:40000, mods:{ lockCount:4, treasureCount:2, multCount:2 } },
+  { id:34, world:3, layout:'twinPeak',  stock:22, par:20000, gold:31000, perfect:41000, mods:{ wildStock:3, multCount:3, treasureCount:2 } },
+  { id:35, world:3, layout:'star',      stock:22, par:20500, gold:32000, perfect:42000, mods:{ treasureCount:4, lockCount:3, multCount:3 } },
+  { id:36, world:3, layout:'butterfly', stock:22, par:21000, gold:33000, perfect:43000, boss:true, mods:{ memoryPieces:2, treasureCount:3, wildStock:2, multCount:3 } },
+  // ============ WORLD 4 — Castle Heights ============
+  { id:37, world:4, layout:'castle',    stock:22, par:21500, gold:34000, perfect:44500, mods:{ wildStock:4, multCount:3, lockCount:2 } },
+  { id:38, world:4, layout:'crown',     stock:22, par:22000, gold:34500, perfect:45000, mods:{ wildStock:3, multCount:4, treasureCount:2 } },
+  { id:39, world:4, layout:'hourglass', stock:22, par:22500, gold:35000, perfect:46000, mods:{ wildStock:3, lockCount:4, multCount:3 } },
+  { id:40, world:4, layout:'tree',      stock:22, par:23000, gold:36000, perfect:47000, mods:{ wildStock:3, multCount:4, treasureCount:3 } },
+  { id:41, world:4, layout:'castle',    stock:22, par:23500, gold:36500, perfect:47500, mods:{ wildStock:4, lockCount:4, multCount:3 } },
+  { id:42, world:4, layout:'tripeak3',  stock:20, par:24000, gold:37500, perfect:48500, mods:{ wildStock:3, memoryPieces:1, multCount:4 } },
+  { id:43, world:4, layout:'star',      stock:22, par:24500, gold:38000, perfect:49500, mods:{ wildStock:4, multCount:4, treasureCount:3 } },
+  { id:44, world:4, layout:'snowflake', stock:22, par:25000, gold:39000, perfect:50500, mods:{ wildStock:3, lockCount:4, treasureCount:3 } },
+  { id:45, world:4, layout:'pyramid',   stock:20, par:25500, gold:39500, perfect:51500, mods:{ wildStock:4, multCount:4, lockCount:3 } },
+  { id:46, world:4, layout:'butterfly', stock:22, par:26000, gold:40000, perfect:52500, mods:{ wildStock:3, memoryPieces:2, multCount:4 } },
+  { id:47, world:4, layout:'castle',    stock:22, par:26500, gold:41000, perfect:53500, mods:{ wildStock:4, lockCount:5, treasureCount:3 } },
+  { id:48, world:4, layout:'crown',     stock:22, par:27000, gold:42000, perfect:54500, boss:true, mods:{ wildStock:4, lockCount:4, multCount:4, treasureCount:3 } },
+  // ============ WORLD 5 — Crystal Caves ============
+  { id:49, world:5, layout:'star',      stock:22, par:27500, gold:43000, perfect:56000, mods:{ memoryPieces:3, wildStock:3, multCount:4, treasureCount:2 } },
+  { id:50, world:5, layout:'snowflake', stock:22, par:28000, gold:44000, perfect:57500, mods:{ memoryPieces:3, wildStock:4, multCount:4, lockCount:3 } },
+  { id:51, world:5, layout:'heart',     stock:22, par:28500, gold:44500, perfect:58500, mods:{ memoryPieces:2, wildStock:4, multCount:5, treasureCount:3 } },
+  { id:52, world:5, layout:'tree',      stock:22, par:29000, gold:45000, perfect:59500, mods:{ wildStock:5, lockCount:5, multCount:4 } },
+  { id:53, world:5, layout:'butterfly', stock:22, par:29500, gold:46000, perfect:60500, mods:{ memoryPieces:3, multCount:5, treasureCount:4 } },
+  { id:54, world:5, layout:'star',      stock:22, par:30000, gold:47000, perfect:61500, mods:{ wildStock:5, lockCount:5, treasureCount:4 } },
+  { id:55, world:5, layout:'castle',    stock:22, par:30500, gold:48000, perfect:62500, mods:{ memoryPieces:3, wildStock:4, multCount:5, lockCount:3 } },
+  { id:56, world:5, layout:'crown',     stock:22, par:31000, gold:48500, perfect:63500, mods:{ wildStock:5, multCount:5, treasureCount:4 } },
+  { id:57, world:5, layout:'tripeak3',  stock:20, par:31500, gold:49000, perfect:64500, mods:{ memoryPieces:2, wildStock:5, lockCount:5 } },
+  { id:58, world:5, layout:'twinPeak',  stock:20, par:32000, gold:50000, perfect:65500, mods:{ wildStock:5, multCount:5, lockCount:4, treasureCount:3 } },
+  { id:59, world:5, layout:'star',      stock:22, par:32500, gold:51000, perfect:66500, mods:{ memoryPieces:3, wildStock:5, multCount:5, lockCount:4 } },
+  { id:60, world:5, layout:'snowflake', stock:24, par:33000, gold:53000, perfect:68000, boss:true, mods:{ memoryPieces:5, wildStock:5, multCount:5, lockCount:5, treasureCount:4 } }
+];
+
+const ACHIEVEMENTS = [
+  { id:'first_win',    icon:'🌟', tKey:'ach_first_win',    reward:50,   check: s => s.totalGames >= 1 },
+  { id:'cleared_10',   icon:'🎴', tKey:'ach_cleared_10',   reward:100,  check: s => s.maxLevelUnlocked > 10 },
+  { id:'cleared_25',   icon:'🎯', tKey:'ach_cleared_25',   reward:200,  check: s => s.maxLevelUnlocked > 25 },
+  { id:'cleared_50',   icon:'🏆', tKey:'ach_cleared_50',   reward:500,  check: s => s.maxLevelUnlocked > 50 },
+  { id:'cleared_60',   icon:'👑', tKey:'ach_cleared_60',   reward:1000, check: s => s.maxLevelUnlocked > 60 },
+  { id:'chain_5',      icon:'⚡', tKey:'ach_chain_5',      reward:50,   check: s => s.bestChain >= 5 },
+  { id:'chain_10',     icon:'💥', tKey:'ach_chain_10',     reward:150,  check: s => s.bestChain >= 10 },
+  { id:'chain_15',     icon:'🌈', tKey:'ach_chain_15',     reward:300,  check: s => s.bestChain >= 15 },
+  { id:'stars_30',     icon:'⭐', tKey:'ach_stars_30',     reward:100,  check: s => s.stars >= 30 },
+  { id:'stars_90',     icon:'✨', tKey:'ach_stars_90',     reward:300,  check: s => s.stars >= 90 },
+  { id:'stars_180',    icon:'🌟', tKey:'ach_stars_180',    reward:1000, check: s => s.stars >= 180 },
+  { id:'streak_3',     icon:'🔥', tKey:'ach_streak_3',     reward:60,   check: s => s.streak >= 3 },
+  { id:'streak_7',     icon:'🔥', tKey:'ach_streak_7',     reward:150,  check: s => s.streak >= 7 },
+  { id:'streak_30',    icon:'🔥', tKey:'ach_streak_30',    reward:1000, check: s => s.streak >= 30 },
+  { id:'postcard_1',   icon:'🖼️', tKey:'ach_postcard_1',   reward:200,  check: s => Object.values(s.postcards || {}).filter(p => p.complete).length >= 1 },
+  { id:'postcard_all', icon:'📸', tKey:'ach_postcard_all', reward:1500, check: s => Object.values(s.postcards || {}).filter(p => p.complete).length >= 5 },
+  { id:'perfect_5',    icon:'💎', tKey:'ach_perfect_5',    reward:200,  check: s => Object.values(s.starsPerLevel || {}).filter(v => v === 3).length >= 5 },
+  { id:'perfect_25',   icon:'💠', tKey:'ach_perfect_25',   reward:1000, check: s => Object.values(s.starsPerLevel || {}).filter(v => v === 3).length >= 25 }
+];
+
+const POSTCARDS = [
+  { id:1, worldId:1, key:'rose_gate',    tKey:'pc_rose_gate',    pieces:5 },
+  { id:2, worldId:2, key:'whisperwood',  tKey:'pc_whisperwood',  pieces:5 },
+  { id:3, worldId:3, key:'coral_reef',   tKey:'pc_coral_reef',   pieces:5 },
+  { id:4, worldId:4, key:'throne_room',  tKey:'pc_throne_room',  pieces:5 },
+  { id:5, worldId:5, key:'crystal_heart',tKey:'pc_crystal_heart',pieces:5 }
+];
+
+/* ============== [JS-07] CARD MODEL ============== */
+const Card = {
+  // rank: 1..13
+  // suit: index 0..3
+  // type: 'normal'|'locked'|'mult'|'treasure'|'memory'|'wild'
+  isMatch(rankA, rankB) {
+    if (!rankA || !rankB) return false;
+    const d = Math.abs(rankA - rankB);
+    return d === 1 || d === 12; // 12 = K(13) to A(1) wrap
+  }
+};
+
+function computeBlockers(cards) {
+  // For each card, find the cards that visually overlap it from below (next layer down toward camera).
+  // A card B blocks A if B.layer > A.layer and |B.x - A.x| < threshold and B.y > A.y - tiny.
+  // Lower layer (smaller number) = behind. Higher layer = in front.
+  // We map "in front" cards as blockers.
+  const px = (CARD_W * 0.62) / 1000; // approx fraction of cards considered overlapping; updated per render
+  for (const c of cards) c.blockers = [];
+  for (let i = 0; i < cards.length; i++) {
+    const a = cards[i];
+    for (let j = 0; j < cards.length; j++) {
+      if (i === j) continue;
+      const b = cards[j];
+      if (b.layer <= a.layer) continue;
+      // proximity threshold tuned for normalized coords (we use a generous 0.07)
+      if (Math.abs(b.x - a.x) < 0.075 && b.y - a.y >= 0 && b.y - a.y < 0.16) {
+        a.blockers.push(b.id);
+      }
+    }
+  }
+}
+
+function isPlayable(card, game) {
+  if (card.cleared) return false;
+  if (card.faceDown) return false;
+  if (card.type === 'locked' && card.lockCount > 0) return false;
+  // playable when all blockers are cleared
+  for (const bid of card.blockers) {
+    const b = game.cards.find(c => c.id === bid);
+    if (b && !b.cleared) return false;
+  }
+  return true;
+}
+
+/* ============== [JS-08] GAME ENGINE ============== */
+const game = {
+  active: false,
+  levelId: 1,
+  cards: [],
+  waste: null,
+  stock: [],
+  drawnCount: 0,
+  score: 0,
+  chain: 0,
+  multTier: 0,
+  rng: Math.random,
+  startedAt: 0,
+  finished: false,
+  won: false,
+  history: [], // {cardId, prevWaste, prevChain, prevScore}
+  fxLayer: [],
+  particles: [],
+  scorePopups: [],
+  armedBooster: null,
+  collectedTreasures: 0,
+  memoryRevealed: 0,
+  introsShownThisRun: {}
+};
+
+function startLevel(id) {
+  const def = LEVELS.find(l => l.id === id);
+  if (!def) { toast(t('coming_soon')); return; }
+  if (id > state.maxLevelUnlocked) { toast(t('locked')); return; }
+  game.active = true;
+  game.finished = false;
+  game.won = false;
+  game.levelId = id;
+  game.score = 0;
+  game.chain = 0;
+  game.multTier = 0;
+  game.armedBooster = null;
+  game.collectedTreasures = 0;
+  game.memoryRevealed = 0;
+  game.introsShownThisRun = {};
+  game.history = [];
+  game.fxLayer = [];
+  game.particles = [];
+  game.scorePopups = [];
+  game.startedAt = Date.now();
+
+  // RNG: deterministic per-level so the run is reproducible per attempt session (changes on each retry though)
+  game.rng = mulberry32((id * 9311 + Date.now() & 0xffffffff) >>> 0);
+
+  // build cards
+  const positions = LAYOUTS[def.layout]({});
+  // assign ranks/suits: use full deck then top up if more positions
+  const deck = [];
+  for (let s = 0; s < 4; s++) for (let r = 1; r <= 13; r++) deck.push({ rank: r, suit: s });
+  shuffle(deck, game.rng);
+  while (deck.length < positions.length + def.stock + 6) {
+    for (let s = 0; s < 4; s++) for (let r = 1; r <= 13; r++) deck.push({ rank: r, suit: s });
+  }
+  let cursor = 0;
+
+  game.cards = positions.map(p => {
+    const d = deck[cursor++];
+    return {
+      id: p.id,
+      x: p.x, y: p.y, layer: p.layer,
+      rank: d.rank, suit: d.suit,
+      faceDown: !!p.faceDown,
+      cleared: false,
+      type: 'normal',
+      lockCount: 0, multValue: 1,
+      anim: null
+    };
+  });
+
+  // apply modifiers (locked / mult / treasure / memory positions)
+  const mods = def.mods || {};
+  const facingUp = game.cards.filter(c => !c.faceDown).map(c => c.id);
+  const facingDown = game.cards.filter(c => c.faceDown).map(c => c.id);
+  const shuffledUp = facingUp.slice(); shuffle(shuffledUp, game.rng);
+  const shuffledDown = facingDown.slice(); shuffle(shuffledDown, game.rng);
+  let upCur = 0, dnCur = 0;
+  const takeUp = () => game.cards.find(c => c.id === shuffledUp[upCur++]);
+  const takeDown = () => game.cards.find(c => c.id === shuffledDown[dnCur++]);
+
+  if (mods.lockCount) {
+    for (let i = 0; i < mods.lockCount && i < shuffledUp.length; i++) {
+      const c = takeUp(); if (!c) break;
+      c.type = 'locked'; c.lockCount = 2;
+    }
+  }
+  if (mods.multCount) {
+    for (let i = 0; i < mods.multCount && upCur < shuffledUp.length; i++) {
+      const c = takeUp(); if (!c) break;
+      c.type = 'mult'; c.multValue = 2;
+    }
+  }
+  if (mods.treasureCount) {
+    for (let i = 0; i < mods.treasureCount && upCur < shuffledUp.length; i++) {
+      const c = takeUp(); if (!c) break;
+      c.type = 'treasure';
+    }
+  }
+  if (mods.memoryPieces) {
+    for (let i = 0; i < mods.memoryPieces && dnCur < shuffledDown.length; i++) {
+      const c = takeDown(); if (!c) break;
+      c.type = 'memory';
+    }
+  }
+
+  computeBlockers(game.cards);
+
+  // stock
+  game.stock = [];
+  for (let i = 0; i < def.stock; i++) {
+    const d = deck[cursor++] || { rank: 1 + ((Math.random()*13)|0), suit: 0 };
+    game.stock.push({ rank: d.rank, suit: d.suit, wild: false });
+  }
+  if (mods.wildStock) {
+    const idx = [];
+    for (let i = 0; i < game.stock.length; i++) idx.push(i);
+    shuffle(idx, game.rng);
+    for (let i = 0; i < mods.wildStock && i < idx.length; i++) game.stock[idx[i]].wild = true;
+  }
+  // initial waste = first stock pop
+  game.waste = game.stock.pop() || { rank: 7, suit: 0 };
+  game.drawnCount = 1;
+
+  // intro popup for new mechanic
+  const intro = def.intro;
+  if (intro && !state.introsSeen[intro]) {
+    state.introsSeen[intro] = true; saveState();
+    game.introsShownThisRun[intro] = true;
+  }
+
+  showPlayScreen();
+  layoutCanvas();
+  renderHUD();
+  mp('level_start', { level: id, layout: def.layout, par: def.par });
+  if (intro && game.introsShownThisRun[intro]) {
+    setTimeout(() => toast(t('intro_' + intro)), 350);
+  }
+}
+
+function tryPlayCard(cardId) {
+  const c = game.cards.find(x => x.id === cardId);
+  if (!c || c.cleared) return;
+  if (game.armedBooster) {
+    handleArmedBoosterOnCard(c);
+    return;
+  }
+  if (!isPlayable(c, game)) {
+    haptic('warn');
+    flashCard(c, '#ef476f');
+    return;
+  }
+  if (!Card.isMatch(c.rank, game.waste.rank) && !game.waste.wild && !c.wild) {
+    haptic('warn');
+    flashCard(c, '#ef476f');
+    return;
+  }
+  // PLAY
+  const prevWaste = { ...game.waste };
+  const prevChain = game.chain;
+  const prevScore = game.score;
+  const prevType = c.type;
+  game.history.push({ cardId: c.id, prevWaste, prevChain, prevScore, prevType, prevMult: c.multValue, prevLock: c.lockCount });
+  if (game.history.length > 20) game.history.shift();
+
+  c.cleared = true;
+  // animate to waste
+  c.anim = { kind:'toWaste', t:0, dur:280, fromX:c.x, fromY:c.y };
+  game.waste = { rank: c.rank, suit: c.suit, wild: !!c.wild };
+
+  game.chain += 1;
+  const tier = currentComboTier(game.chain);
+  game.multTier = tier;
+  const base = 50;
+  const multScore = base * COMBO_TIERS[tier].mult * (c.multValue || 1);
+  game.score += multScore;
+  spawnScorePopup(c.x, c.y, '+' + multScore + (c.multValue > 1 ? ' x' + c.multValue : ''));
+
+  if (c.type === 'treasure') {
+    state.coins += 30;
+    spawnParticles(c.x, c.y, 14, '#ffd166');
+    spawnScorePopup(c.x, c.y - 0.04, '+30 🪙');
+    saveState();
+  }
+  if (c.type === 'memory') {
+    state.memoryPieces += 1;
+    game.memoryRevealed += 1;
+    spawnParticles(c.x, c.y, 18, '#a83af0');
+    saveState();
+  }
+  if (c.type === 'mult') {
+    spawnParticles(c.x, c.y, 16, '#ffd166');
+  }
+
+  spawnParticles(c.x, c.y, 8, '#fff');
+  haptic('impact');
+  beepMatch(game.chain);
+
+  // unlock revealed cards beneath
+  setTimeout(revealCardsBeneath, 260);
+
+  // chain-of-5 mission
+  if (game.chain === 5) state.totalChains5 += 1, saveState();
+
+  // combo tier callout
+  if (tier > game.multTier - 1 && tier > 0) {
+    showComboCallout(tier);
+  }
+  renderHUD();
+  checkWin();
+}
+
+function handleArmedBoosterOnCard(c) {
+  const b = game.armedBooster;
+  if (b === 'wild') {
+    if (state.boosters.wild <= 0) { armBooster(null); return; }
+    // turn waste into wild matching this card
+    game.waste = { rank: c.rank, suit: c.suit, wild: true };
+    state.boosters.wild -= 1; saveState();
+    spawnParticles(0.5, 0.6, 24, '#ffd166');
+    armBooster(null);
+    renderHUD();
+  } else {
+    armBooster(null);
+  }
+}
+
+function revealCardsBeneath() {
+  // any face-down card whose blockers are all cleared becomes face-up + flips
+  const reveals = [];
+  for (const c of game.cards) {
+    if (c.cleared) continue;
+    if (!c.faceDown) continue;
+    let ok = true;
+    for (const bid of c.blockers) {
+      const b = game.cards.find(x => x.id === bid);
+      if (b && !b.cleared) { ok = false; break; }
+    }
+    if (ok) reveals.push(c);
+  }
+  reveals.forEach(c => {
+    c.faceDown = false;
+    c.anim = { kind:'flip', t: 0, dur: 280 };
+    // decrement lock count on neighbors if newly revealed
+  });
+  // also, every match: decrement lockCount of neighboring locked cards
+  // (treated as a generic effect — neighbors are blockers' parents or siblings of just-cleared)
+  for (const c of game.cards) {
+    if (c.cleared || c.type !== 'locked' || c.lockCount <= 0) continue;
+    // count cleared neighbors among blockers + siblings within 0.12 x and 0.12 y
+    let neighborsClearedNow = 0;
+    for (const o of game.cards) {
+      if (o === c) continue;
+      if (!o.cleared) continue;
+      if (Math.abs(o.x - c.x) < 0.13 && Math.abs(o.y - c.y) < 0.14) {
+        if (o._lockTickedFor && o._lockTickedFor.has && o._lockTickedFor.has(c.id)) continue;
+        neighborsClearedNow += 1;
+        if (!o._lockTickedFor) o._lockTickedFor = new Set();
+        o._lockTickedFor.add(c.id);
+      }
+    }
+    if (neighborsClearedNow > 0) {
+      c.lockCount = Math.max(0, c.lockCount - neighborsClearedNow);
+      if (c.lockCount === 0) {
+        spawnParticles(c.x, c.y, 12, '#ffd166');
+      }
+    }
+  }
+}
+
+function drawFromStock() {
+  if (game.stock.length === 0) {
+    toast(t('no_match'));
+    return;
+  }
+  if (game.chain > 0) flashComboBreak();
+  game.chain = 0;
+  game.multTier = 0;
+  game.history.push({ kind:'draw', prevWaste: { ...game.waste }, prevChain: game.chain, prevScore: game.score });
+  if (game.history.length > 20) game.history.shift();
+  game.waste = game.stock.pop();
+  game.drawnCount += 1;
+  haptic('impact');
+  beepDraw();
+  renderHUD();
+  checkWin();
+}
+
+function currentComboTier(chain) {
+  let tier = 0;
+  for (let i = COMBO_TIERS.length - 1; i >= 0; i--) {
+    if (chain >= COMBO_TIERS[i].chain) { tier = i; break; }
+  }
+  return tier;
+}
+
+function undo() {
+  if (state.boosters.undo <= 0) { toast(t('not_enough')); return; }
+  if (!game.history.length) { toast(t('no_undo')); return; }
+  const h = game.history.pop();
+  if (h.kind === 'draw') {
+    game.stock.push(game.waste);
+    game.waste = h.prevWaste;
+    game.chain = h.prevChain;
+    game.score = h.prevScore;
+  } else {
+    const c = game.cards.find(x => x.id === h.cardId);
+    if (c) {
+      c.cleared = false;
+      c.type = h.prevType || c.type;
+      c.multValue = h.prevMult || c.multValue;
+      c.lockCount = (h.prevLock != null) ? h.prevLock : c.lockCount;
+    }
+    game.waste = h.prevWaste;
+    game.chain = h.prevChain;
+    game.score = h.prevScore;
+    if (h.kind === 'draw' || h.prevType === 'treasure') {
+      // refund treasure coins if undo'd (simple)
+    }
+  }
+  state.boosters.undo -= 1;
+  saveState();
+  game.multTier = currentComboTier(game.chain);
+  computeBlockers(game.cards);
+  renderHUD();
+  haptic('impact');
+}
+
+function shuffleBoard() {
+  if (state.boosters.shuffle <= 0) { toast(t('not_enough')); return; }
+  // shuffle face-up, non-cleared cards' ranks/suits among themselves
+  const live = game.cards.filter(c => !c.cleared && !c.faceDown);
+  const ranks = live.map(c => ({ rank:c.rank, suit:c.suit }));
+  shuffle(ranks, game.rng);
+  live.forEach((c, i) => { c.rank = ranks[i].rank; c.suit = ranks[i].suit; c.anim = { kind:'shuffle', t:0, dur: 360 }; });
+  state.boosters.shuffle -= 1;
+  saveState();
+  spawnParticles(0.5, 0.5, 30, '#06d6a0');
+  haptic('success');
+  beepShuffle();
+  renderHUD();
+}
+
+function checkWin() {
+  const remaining = game.cards.filter(c => !c.cleared);
+  if (remaining.length === 0) {
+    finishLevel(true);
+    return;
+  }
+  // lose: stock empty AND no legal moves. Trigger Disney-style "user-initiated failure" — offer +5 cards rescue first.
+  if (game.stock.length === 0) {
+    const playable = remaining.filter(c => isPlayable(c, game) && (Card.isMatch(c.rank, game.waste.rank) || game.waste.wild || c.wild));
+    if (playable.length === 0) {
+      if (!game._rescueOffered && remaining.length <= 8 && !game.dailyMode) {
+        game._rescueOffered = true;
+        offerRescue(remaining.length);
+        return;
+      }
+      finishLevel(false);
+    }
+  }
+}
+
+function offerRescue(remainingN) {
+  const cost = 150;
+  const html =
+    '<button class="x" onclick="closeModal();finishLevel(false)">✕</button>' +
+    '<h3>😩 So close!</h3>' +
+    '<p>' + remainingN + ' cards left and the stock is empty.</p>' +
+    '<p style="font-size:13px;color:var(--ink-soft)">Buy 5 more stock cards and keep your combo going?</p>' +
+    '<div class="cta-row">' +
+      '<button class="cta secondary" id="cta-give">' + t('btn_retry') + '</button>' +
+      '<button class="cta" id="cta-rescue">+5 🪙 ' + cost + '</button>' +
+    '</div>';
+  openModal(html, () => {
+    document.getElementById('cta-give').addEventListener('click', () => { closeModal(); finishLevel(false); });
+    document.getElementById('cta-rescue').addEventListener('click', () => {
+      if (state.coins < cost) { toast(t('not_enough')); return; }
+      state.coins -= cost; saveState();
+      for (let i = 0; i < 5; i++) {
+        game.stock.push({ rank: 1 + Math.floor(Math.random() * 13), suit: Math.floor(Math.random()*4), wild: i === 0 });
+      }
+      closeModal();
+      toast('+5 📦');
+      haptic('success');
+      renderHUD();
+      mp('rescue_taken', { level: game.levelId, cost });
+    });
+  });
+  mp('rescue_offered', { level: game.levelId });
+  haptic('warn');
+}
+
+function finishLevel(won) {
+  if (game.finished) return;
+  game.finished = true;
+  game.won = won;
+  const def = LEVELS.find(l => l.id === game.levelId);
+  let stars = 0;
+  if (won) {
+    // stock-leftover bonus
+    const leftover = game.stock.length * 50;
+    game.score += leftover;
+    spawnScorePopup(0.5, 0.5, '+' + leftover + ' ' + t('stock_left'));
+    // star tiers
+    if (game.score >= def.perfect) stars = 3;
+    else if (game.score >= def.gold) stars = 2;
+    else stars = 1;
+    const prev = state.starsPerLevel[game.levelId] || 0;
+    if (stars > prev) state.starsPerLevel[game.levelId] = stars;
+    state.stars = Object.values(state.starsPerLevel).reduce((a,b)=>a+b,0);
+    state.bestScorePerLevel[game.levelId] = Math.max(state.bestScorePerLevel[game.levelId] || 0, game.score);
+    state.maxLevelUnlocked = Math.max(state.maxLevelUnlocked, game.levelId + 1);
+    state.coins += 50 + stars * 30 + (state.battlePassUntil > Date.now() ? 30 : 0);
+    bumpStreakOnWin();
+    state.totalGames += 1;
+    state.gamesPlayedToday = (state.gamesPlayedYMD === ymd()) ? (state.gamesPlayedToday + 1) : 1;
+    state.gamesPlayedYMD = ymd();
+    saveState();
+    mp('level_complete', { level: game.levelId, score: game.score, stars, chain_best: game.chain });
+    spawnConfetti();
+    setTimeout(() => openLevelCompleteModal(stars), 700);
+  } else {
+    saveState();
+    mp('level_failed', { level: game.levelId, score: game.score });
+    setTimeout(() => openLevelFailedModal(), 500);
+  }
+  pushHeartbeat();
+  submitLeaderboard();
+}
+
+function bumpStreakOnWin() {
+  const today = ymd();
+  if (state.lastPlayedYMD === today) return;
+  const y = new Date(); y.setUTCDate(y.getUTCDate()-1);
+  if (state.lastPlayedYMD === ymd(y) || !state.lastPlayedYMD) {
+    state.streak = (state.streak || 0) + 1;
+  } else if (state.shieldUntil > Date.now()) {
+    state.streak = state.streak; // shielded
+  } else {
+    state.streak = 1;
+  }
+  state.lastPlayedYMD = today;
+}
+
+/* ============== [JS-09] BOOSTERS UI ============== */
+function armBooster(name) {
+  if (name && state.boosters[name] <= 0) { toast(t('not_enough')); return; }
+  if (name === 'shuffle') { shuffleBoard(); return; }
+  if (name === 'undo')    { undo(); return; }
+  game.armedBooster = (game.armedBooster === name) ? null : name;
+  renderBoosterRow();
+  if (game.armedBooster === 'wild') toast(t('armed_tap_card'));
+}
+
+function renderBoosterRow() {
+  const row = document.getElementById('booster-row');
+  if (!row) return;
+  row.innerHTML = '';
+  BOOSTER_LIST.forEach(name => {
+    const n = state.boosters[name] | 0;
+    const b = document.createElement('button');
+    b.className = 'booster' + (n <= 0 ? ' empty' : '') + (game.armedBooster === name ? ' armed' : '');
+    b.innerHTML = BOOSTER_ICON[name] + '<span class="count">' + n + '</span>';
+    b.addEventListener('click', (ev) => { ev.stopPropagation(); armBooster(name); });
+    row.appendChild(b);
+  });
+}
+
+/* ============== [JS-10] RENDER (CANVAS) ============== */
+const canvas = document.getElementById('game-canvas');
+const ctx = canvas.getContext('2d');
+let dpr = window.devicePixelRatio || 1;
+let cssW = 0, cssH = 0;
+let originX = 0, originY = 0, playW = 0, playH = 0;
+function layoutCanvas() {
+  const rect = canvas.getBoundingClientRect();
+  dpr = window.devicePixelRatio || 1;
+  cssW = rect.width; cssH = rect.height;
+  canvas.width = Math.floor(cssW * dpr);
+  canvas.height = Math.floor(cssH * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  // play surface coords: pad 16px each side, top, leaves space at bottom for waste
+  const padX = 12, padTop = 8, padBottom = 4;
+  originX = padX;
+  originY = padTop;
+  playW = cssW - padX * 2;
+  playH = cssH - padTop - padBottom;
+}
+window.addEventListener('resize', () => { layoutCanvas(); });
+
+function normToScreen(nx, ny) {
+  return { x: originX + nx * playW, y: originY + ny * playH };
+}
+
+function drawBg() {
+  // table felt
+  const grad = ctx.createLinearGradient(0, 0, 0, cssH);
+  grad.addColorStop(0, 'rgba(255,255,255,0.02)');
+  grad.addColorStop(1, 'rgba(0,0,0,0.20)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, cssW, cssH);
+}
+
+function drawRoundedRect(c, x, y, w, h, r) {
+  c.beginPath();
+  c.moveTo(x + r, y);
+  c.lineTo(x + w - r, y);
+  c.quadraticCurveTo(x + w, y, x + w, y + r);
+  c.lineTo(x + w, y + h - r);
+  c.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  c.lineTo(x + r, y + h);
+  c.quadraticCurveTo(x, y + h, x, y + h - r);
+  c.lineTo(x, y + r);
+  c.quadraticCurveTo(x, y, x + r, y);
+  c.closePath();
+}
+
+function drawCardFace(c, x, y, w, h, card, scaleX, compact) {
+  scaleX = (scaleX == null) ? 1 : scaleX;
+  c.save();
+  c.translate(x + w/2, y + h/2);
+  c.scale(scaleX, 1);
+  c.translate(-w/2, -h/2);
+  // shadow
+  c.fillStyle = 'rgba(0,0,0,0.35)';
+  drawRoundedRect(c, 1, 3, w, h, CARD_R); c.fill();
+  // face
+  const grad = c.createLinearGradient(0, 0, 0, h);
+  grad.addColorStop(0, '#fffcf2');
+  grad.addColorStop(1, '#e9e1c4');
+  c.fillStyle = grad;
+  drawRoundedRect(c, 0, 0, w, h, CARD_R); c.fill();
+  // inner border
+  c.strokeStyle = 'rgba(0,0,0,0.10)';
+  c.lineWidth = 1;
+  drawRoundedRect(c, 1, 1, w-2, h-2, CARD_R-1); c.stroke();
+  // rank+suit corners — BIG for readability (Disney/SGH pattern)
+  const rank = RANK_LABEL[card.rank];
+  const suit = SUITS[card.suit % 4];
+  c.fillStyle = SUIT_COLOR[suit];
+  c.font = '800 ' + Math.floor(h*0.26) + 'px Inter, system-ui, sans-serif';
+  c.textBaseline = 'top';
+  c.textAlign = 'left';
+  c.fillText(rank, 5, 3);
+  c.font = '700 ' + Math.floor(h*0.18) + 'px Inter, system-ui, sans-serif';
+  c.fillText(suit, 6, 3 + Math.floor(h*0.26));
+  if (!compact) {
+    // big center suit (only when card is fully visible — bottom row + waste)
+    c.font = '700 ' + Math.floor(h*0.45) + 'px Inter, system-ui, sans-serif';
+    c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.fillText(suit, w/2, h/2 + 4);
+    // bottom-right rank rotated
+    c.save();
+    c.translate(w - 5, h - 4);
+    c.rotate(Math.PI);
+    c.font = '800 ' + Math.floor(h*0.26) + 'px Inter, system-ui, sans-serif';
+    c.textBaseline = 'top';
+    c.textAlign = 'left';
+    c.fillText(rank, 0, 0);
+    c.restore();
+  }
+  // overlays for types
+  if (card.type === 'mult') {
+    c.strokeStyle = '#ffd166'; c.lineWidth = 3;
+    drawRoundedRect(c, 1.5, 1.5, w-3, h-3, CARD_R-1); c.stroke();
+    c.fillStyle = '#ffd166';
+    c.fillRect(w/2 - 12, h - 18, 24, 14);
+    c.fillStyle = '#1a0b2e';
+    c.font = '900 11px Inter, sans-serif'; c.textAlign='center'; c.textBaseline='middle';
+    c.fillText('x' + (card.multValue || 2), w/2, h - 11);
+  }
+  if (card.type === 'treasure') {
+    c.fillStyle = 'rgba(255,209,102,0.92)';
+    c.beginPath(); c.arc(w/2, h*0.35, h*0.18, 0, Math.PI*2); c.fill();
+    c.fillStyle = '#1a0b2e';
+    c.font = '900 ' + Math.floor(h*0.18) + 'px Inter, sans-serif';
+    c.textAlign='center'; c.textBaseline='middle';
+    c.fillText('🪙', w/2, h*0.35);
+  }
+  if (card.type === 'memory') {
+    c.fillStyle = 'rgba(168,58,240,0.6)';
+    drawRoundedRect(c, 0, 0, w, h, CARD_R); c.fill();
+    c.fillStyle = '#fff';
+    c.font = '900 ' + Math.floor(h*0.30) + 'px Inter, sans-serif';
+    c.textAlign='center'; c.textBaseline='middle';
+    c.fillText('?', w/2, h/2);
+  }
+  if (card.type === 'locked' && card.lockCount > 0) {
+    c.fillStyle = 'rgba(0,0,0,0.6)';
+    drawRoundedRect(c, 0, 0, w, h, CARD_R); c.fill();
+    c.fillStyle = '#fff';
+    c.font = '900 ' + Math.floor(h*0.36) + 'px Inter, sans-serif';
+    c.textAlign='center'; c.textBaseline='middle';
+    c.fillText('🔒', w/2, h/2 - 4);
+    c.font = '900 11px Inter, sans-serif';
+    c.fillText(String(card.lockCount), w/2, h - 12);
+  }
+  if (card.wild) {
+    const wg = c.createLinearGradient(0, 0, w, h);
+    wg.addColorStop(0, 'rgba(239,71,111,0.4)');
+    wg.addColorStop(0.5, 'rgba(255,209,102,0.4)');
+    wg.addColorStop(1, 'rgba(6,214,160,0.4)');
+    c.fillStyle = wg;
+    drawRoundedRect(c, 0, 0, w, h, CARD_R); c.fill();
+    c.fillStyle = '#fff';
+    c.font='900 ' + Math.floor(h*0.4)+'px Inter, sans-serif'; c.textAlign='center'; c.textBaseline='middle';
+    c.fillText('🃏', w/2, h/2);
+  }
+  c.restore();
+}
+
+function drawCardBack(c, x, y, w, h, scaleX) {
+  scaleX = (scaleX == null) ? 1 : scaleX;
+  c.save();
+  c.translate(x + w/2, y + h/2);
+  c.scale(scaleX, 1);
+  c.translate(-w/2, -h/2);
+  // shadow
+  c.fillStyle = 'rgba(0,0,0,0.35)';
+  drawRoundedRect(c, 1, 3, w, h, CARD_R); c.fill();
+  // back
+  const grad = c.createLinearGradient(0, 0, w, h);
+  grad.addColorStop(0, '#6a3df0');
+  grad.addColorStop(1, '#2a0f5a');
+  c.fillStyle = grad;
+  drawRoundedRect(c, 0, 0, w, h, CARD_R); c.fill();
+  c.strokeStyle = 'rgba(255,255,255,0.25)';
+  c.setLineDash([4,3]); c.lineWidth = 1.5;
+  drawRoundedRect(c, 4, 4, w-8, h-8, CARD_R-2); c.stroke();
+  c.setLineDash([]);
+  c.fillStyle = 'rgba(255,209,102,0.85)';
+  c.font = '700 ' + Math.floor(h*0.36) + 'px Inter, sans-serif';
+  c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.fillText('♛', w/2, h/2);
+  c.restore();
+}
+
+function drawCards() {
+  // sort by layer then y so deeper cards render first
+  const sorted = game.cards.slice().sort((a,b) => (a.layer - b.layer) || (a.y - b.y));
+  for (const card of sorted) {
+    if (card.cleared && !card.anim) continue;
+    let nx = card.x, ny = card.y;
+    let scaleX = 1;
+    if (card.anim) {
+      card.anim.t += 16;
+      const p = clamp(card.anim.t / card.anim.dur, 0, 1);
+      if (card.anim.kind === 'toWaste') {
+        const target = { x: wastePileNorm().x, y: wastePileNorm().y };
+        const e = easeOutCubic(p);
+        nx = lerp(card.anim.fromX, target.x, e);
+        ny = lerp(card.anim.fromY, target.y, e);
+        if (p >= 1) { card.anim = null; }
+      } else if (card.anim.kind === 'flip') {
+        const e = p;
+        const s = Math.abs(Math.cos(e * Math.PI));
+        scaleX = Math.max(0.06, s);
+        if (p >= 1) card.anim = null;
+      } else if (card.anim.kind === 'shuffle') {
+        const e = easeOutBack(p);
+        ny = card.y - (1 - e) * 0.05;
+        if (p >= 1) card.anim = null;
+      }
+    }
+    if (card.cleared && !card.anim) continue;
+    const pos = normToScreen(nx, ny);
+    const x = pos.x - CARD_W/2;
+    const y = pos.y - CARD_H/2;
+    const showFace = !card.faceDown || (card.anim && card.anim.kind === 'flip' && card.anim.t > card.anim.dur*0.5);
+    // covered = at least one blocker still uncleared. Render compact (no center suit / no bottom rank).
+    const covered = isCardCovered(card);
+    if (showFace) drawCardFace(ctx, x, y, CARD_W, CARD_H, card, scaleX, covered);
+    else drawCardBack(ctx, x, y, CARD_W, CARD_H, scaleX);
+    // playable highlight — bigger + pulse
+    if (!card.faceDown && !card.cleared && isPlayable(card, game) && (Card.isMatch(card.rank, game.waste.rank) || game.waste.wild)) {
+      const pulse = 0.5 + Math.sin(performance.now() * 0.006) * 0.5;
+      ctx.save();
+      ctx.strokeStyle = 'rgba(6,214,160,' + (0.5 + pulse * 0.5) + ')';
+      ctx.lineWidth = 3;
+      drawRoundedRect(ctx, x - 2, y - 2, CARD_W + 4, CARD_H + 4, CARD_R + 2);
+      ctx.stroke();
+      // soft glow
+      ctx.shadowColor = 'rgba(6,214,160,0.7)';
+      ctx.shadowBlur = 8 + pulse * 8;
+      drawRoundedRect(ctx, x - 2, y - 2, CARD_W + 4, CARD_H + 4, CARD_R + 2);
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+}
+function isCardCovered(card) {
+  if (!card.blockers || !card.blockers.length) return false;
+  for (const bid of card.blockers) {
+    const b = game.cards.find(x => x.id === bid);
+    if (b && !b.cleared) return true;
+  }
+  return false;
+}
+
+function drawParticles() {
+  const next = [];
+  for (const p of game.particles) {
+    p.t += 1;
+    if (p.t > p.life) continue;
+    const k = p.t / p.life;
+    const pos = normToScreen(p.x, p.y);
+    ctx.save();
+    ctx.globalAlpha = 1 - k;
+    ctx.fillStyle = p.color;
+    ctx.beginPath();
+    ctx.arc(pos.x + p.vx * p.t, pos.y + p.vy * p.t + 0.5 * 0.05 * p.t * p.t, p.r * (1 - k * 0.5), 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    next.push(p);
+  }
+  game.particles = next;
+}
+
+function drawScorePopups() {
+  const next = [];
+  for (const p of game.scorePopups) {
+    p.t += 1;
+    if (p.t > p.life) continue;
+    const k = p.t / p.life;
+    const pos = normToScreen(p.x, p.y - k * 0.06);
+    ctx.save();
+    ctx.globalAlpha = 1 - k;
+    ctx.fillStyle = p.color || '#ffd166';
+    ctx.font = '900 18px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.shadowColor = 'rgba(0,0,0,0.6)';
+    ctx.shadowBlur = 6;
+    ctx.fillText(p.text, pos.x, pos.y);
+    ctx.restore();
+    next.push(p);
+  }
+  game.scorePopups = next;
+}
+
+function wastePileNorm() {
+  // approximate waste pile location in canvas-normalized coords
+  return { x: 0.78, y: 0.95 };
+}
+
+function renderHUD() {
+  document.getElementById('hud-streak-n').textContent = state.streak | 0;
+  document.getElementById('hud-stars-n').textContent = state.stars | 0;
+  document.getElementById('hud-coins-n').textContent = state.coins | 0;
+  document.getElementById('play-lvl').textContent = 'L ' + game.levelId;
+  document.getElementById('play-score').textContent = game.score | 0;
+  const def = LEVELS.find(l => l.id === game.levelId);
+  if (def) document.getElementById('play-target').textContent = '/ ' + def.par + (game.score >= def.gold ? ' ★★' : game.score >= def.par ? ' ★' : '');
+  // combo dots — 7 dots; lit up to floor(chain * 7 / 10), tier color per current tier
+  const tier = currentComboTier(game.chain);
+  const lit = clamp(Math.min(game.chain, 7), 0, 7);
+  const wrap = document.getElementById('combo-dots-wrap');
+  if (wrap) {
+    const dots = wrap.querySelectorAll('.cdot');
+    dots.forEach((d, i) => {
+      d.classList.remove('lit', 'tier2', 'tier3', 'tier4');
+      if (i < lit) {
+        d.classList.add('lit');
+        if (tier >= 4) d.classList.add('tier4');
+        else if (tier >= 3) d.classList.add('tier3');
+        else if (tier >= 2) d.classList.add('tier2');
+      }
+    });
+    const mt = document.getElementById('combo-mult');
+    if (mt) {
+      if (COMBO_TIERS[tier].mult > 1) { mt.textContent = 'x' + COMBO_TIERS[tier].mult; mt.classList.add('show'); }
+      else { mt.classList.remove('show'); }
+    }
+  }
+  // stock + waste
+  document.getElementById('stock-count').textContent = game.stock.length;
+  drawWasteHTML();
+  renderBoosterRow();
+}
+
+function drawWasteHTML() {
+  const el = document.getElementById('waste-pile');
+  if (!el) return;
+  el.innerHTML = '';
+  const w = 84, h = 118;
+  const cv = document.createElement('canvas');
+  cv.width = Math.floor(w * dpr); cv.height = Math.floor(h * dpr);
+  cv.style.width = w + 'px'; cv.style.height = h + 'px';
+  const c2 = cv.getContext('2d');
+  c2.setTransform(dpr,0,0,dpr,0,0);
+  if (game.waste) drawCardFace(c2, 0, 0, w, h, game.waste, 1);
+  el.appendChild(cv);
+}
+
+function spawnParticles(nx, ny, n, color) {
+  for (let i = 0; i < n; i++) {
+    const a = Math.random() * Math.PI * 2;
+    const sp = rand(1.2, 3.0);
+    game.particles.push({
+      x: nx, y: ny,
+      vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 1.5,
+      t: 0, life: 28 + Math.random() * 12,
+      r: rand(1.5, 3.2), color: color || '#fff'
+    });
+  }
+}
+
+function spawnScorePopup(nx, ny, text, color) {
+  game.scorePopups.push({ x: nx, y: ny, t: 0, life: 50, text, color });
+}
+
+function spawnConfetti() {
+  const colors = ['#ffd166','#06d6a0','#ef476f','#118ab2','#fff','#a83af0'];
+  for (let i = 0; i < 60; i++) {
+    game.particles.push({
+      x: 0.5, y: 0.2,
+      vx: rand(-3, 3), vy: rand(-2, -5),
+      t: 0, life: 80 + Math.random() * 40,
+      r: rand(2, 4), color: colors[i % colors.length]
+    });
+  }
+}
+
+function flashCard(card, color) {
+  spawnParticles(card.x, card.y, 6, color || '#ef476f');
+}
+
+function flashComboBreak() {
+  // tiny shake effect via CSS class on canvas
+  canvas.style.transition = 'transform .1s ease';
+  canvas.style.transform = 'translateX(-3px)';
+  setTimeout(() => { canvas.style.transform = 'translateX(3px)'; }, 60);
+  setTimeout(() => { canvas.style.transform = 'translateX(0)'; }, 120);
+}
+
+function showComboCallout(tier) {
+  const el = document.getElementById('combo-callout');
+  if (!el) return;
+  const def = COMBO_TIERS[tier];
+  if (!def || !def.label) return;
+  el.textContent = def.label;
+  el.classList.add('show');
+  clearTimeout(showComboCallout._t);
+  showComboCallout._t = setTimeout(() => el.classList.remove('show'), 700);
+}
+
+/* ============== [JS-11] INPUT ============== */
+canvas.addEventListener('pointerdown', (ev) => {
+  if (!game.active || game.finished) return;
+  const rect = canvas.getBoundingClientRect();
+  const px = ev.clientX - rect.left;
+  const py = ev.clientY - rect.top;
+  // hit-test top-most card (highest layer) under point
+  let hit = null, hitLayer = -1;
+  for (const c of game.cards) {
+    if (c.cleared) continue;
+    const pos = normToScreen(c.x, c.y);
+    if (px >= pos.x - CARD_W/2 && px <= pos.x + CARD_W/2 && py >= pos.y - CARD_H/2 && py <= pos.y + CARD_H/2) {
+      if (c.layer > hitLayer) { hit = c; hitLayer = c.layer; }
+    }
+  }
+  if (hit) tryPlayCard(hit.id);
+});
+
+document.getElementById('stock-pile').addEventListener('click', () => {
+  if (!game.active || game.finished) return;
+  drawFromStock();
+});
+
+/* ============== [JS-12] AUDIO ============== */
+let AC = null;
+function ensureAC() {
+  if (!state.settings.sound) return null;
+  if (!AC) {
+    try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch {}
+  }
+  if (AC && AC.state === 'suspended') AC.resume();
+  return AC;
+}
+function tone(freq, dur, type, gain) {
+  const ac = ensureAC(); if (!ac) return;
+  const o = ac.createOscillator();
+  const g = ac.createGain();
+  o.type = type || 'sine';
+  o.frequency.value = freq;
+  g.gain.value = 0;
+  g.gain.linearRampToValueAtTime(gain || 0.2, ac.currentTime + 0.01);
+  g.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + dur);
+  o.connect(g).connect(ac.destination);
+  o.start();
+  o.stop(ac.currentTime + dur + 0.02);
+}
+function beepMatch(chain) {
+  const baseFreq = 320 + chain * 28;
+  tone(baseFreq, 0.16, 'triangle', 0.18);
+  tone(baseFreq * 1.5, 0.12, 'sine', 0.08);
+}
+function beepDraw() { tone(180, 0.12, 'sawtooth', 0.12); }
+function beepShuffle() {
+  tone(440, 0.08, 'sine', 0.12); setTimeout(()=>tone(550, 0.08, 'sine', 0.12),80);
+  setTimeout(()=>tone(660, 0.10, 'sine', 0.12),160);
+}
+function beepWin() {
+  tone(523, 0.14, 'triangle', 0.20);
+  setTimeout(()=>tone(659, 0.14, 'triangle', 0.20),140);
+  setTimeout(()=>tone(784, 0.20, 'triangle', 0.22),280);
+}
+function beepLose() {
+  tone(220, 0.18, 'sawtooth', 0.18);
+  setTimeout(()=>tone(165, 0.22, 'sawtooth', 0.18),140);
+}
+
+/* ============== [JS-13] FRAME LOOP ============== */
+function frame() {
+  if (canvas.width !== Math.floor(cssW * dpr)) { /* nothing */ }
+  ctx.clearRect(0, 0, cssW, cssH);
+  drawBg();
+  drawCards();
+  drawParticles();
+  drawScorePopups();
+  if (typeof drawMascot === 'function' && mascot.el && mascot.el.classList.contains('show')) drawMascot();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+/* ============== [JS-14] MAP VIEW ============== */
+function renderMap() {
+  const root = document.getElementById('map-scroller');
+  if (!root) return;
+  root.innerHTML = '';
+  // map header
+  document.getElementById('map-title').textContent = t('quest_map');
+  // build nodes
+  LEVELS.forEach((lvl, idx) => {
+    const node = document.createElement('button');
+    const stars = state.starsPerLevel[lvl.id] || 0;
+    const unlocked = lvl.id <= state.maxLevelUnlocked;
+    const isCurrent = unlocked && lvl.id === state.maxLevelUnlocked && stars < 3;
+    node.className = 'map-node' + (unlocked ? '' : ' locked') + (isCurrent ? ' current' : '');
+    node.dataset.side = (idx % 4 === 1 ? 'L' : idx % 4 === 3 ? 'R' : 'C');
+    if (unlocked) {
+      node.innerHTML = '<div class="n-num">' + lvl.id + '</div><div class="n-stars">' + ('★'.repeat(stars) + '☆'.repeat(3 - stars)) + '</div>';
+      node.addEventListener('click', () => {
+        state.level = lvl.id; saveState();
+        document.getElementById('play-fab-lbl').textContent = t('play_level', { n: lvl.id });
+        toast(t('play_level', { n: lvl.id }));
+      });
+      node.addEventListener('dblclick', () => startLevel(lvl.id));
+    } else {
+      node.innerHTML = '<div class="lock">🔒</div>';
+    }
+    root.appendChild(node);
+  });
+  // coming soon end-card
+  const more = document.createElement('div');
+  more.style.textAlign = 'center';
+  more.style.padding = '18px 12px 70px';
+  more.style.color = 'var(--ink-dim)';
+  more.style.fontSize = '12px';
+  more.textContent = t('coming_soon');
+  root.appendChild(more);
+  // play fab updates to current level
+  document.getElementById('play-fab-lbl').textContent = t('play_level', { n: state.level || state.maxLevelUnlocked });
+}
+
+function showPlayScreen() {
+  document.getElementById('map-screen').style.display = 'none';
+  document.getElementById('play-screen').classList.add('active');
+  document.getElementById('play-fab-wrap').style.display = 'none';
+  setTimeout(layoutCanvas, 16);
+}
+function showMapScreen() {
+  document.getElementById('map-screen').style.display = 'block';
+  document.getElementById('play-screen').classList.remove('active');
+  document.getElementById('play-fab-wrap').style.display = 'flex';
+  game.active = false;
+}
+
+/* ============== [JS-15] SHOP TAB ============== */
+function renderShop() {
+  const root = document.getElementById('shop-scroll');
+  if (!root) return;
+  root.innerHTML = '';
+
+  // featured starter pack
+  const featured = document.createElement('div');
+  featured.className = 'shop-featured';
+  featured.innerHTML = '<div class="icon">🎁</div>' +
+    '<div><h3>' + t('sku_starter_t') + '</h3><div class="sub">' + t('sku_starter_s') + '</div></div>' +
+    '<button class="buy" data-sku="starter_pack">⭐ 199</button>';
+  root.appendChild(featured);
+
+  // section: coin packs
+  const sec1 = document.createElement('div'); sec1.className = 'shop-section-title'; sec1.textContent = t('shop_packs');
+  root.appendChild(sec1);
+  const g1 = document.createElement('div'); g1.className = 'shop-grid';
+  ['coins_small','coins_big','coins_mega'].forEach(sku => g1.appendChild(makeShopCard(sku)));
+  root.appendChild(g1);
+
+  // section: boosters
+  const sec2 = document.createElement('div'); sec2.className = 'shop-section-title'; sec2.textContent = t('shop_boosters');
+  root.appendChild(sec2);
+  const g2 = document.createElement('div'); g2.className = 'shop-grid';
+  ['revive','shuffle_pack','wild_pack','undo_pack'].forEach(sku => g2.appendChild(makeShopCard(sku)));
+  root.appendChild(g2);
+
+  // section: skins / extras
+  const sec3 = document.createElement('div'); sec3.className = 'shop-section-title'; sec3.textContent = t('shop_skins');
+  root.appendChild(sec3);
+  const g3 = document.createElement('div'); g3.className = 'shop-grid';
+  ['skin_royal','skin_forest'].forEach(sku => g3.appendChild(makeShopCard(sku)));
+  root.appendChild(g3);
+
+  // section: other
+  const sec4 = document.createElement('div'); sec4.className = 'shop-section-title'; sec4.textContent = t('shop_other');
+  root.appendChild(sec4);
+  const g4 = document.createElement('div'); g4.className = 'shop-grid';
+  ['streak_shield','battle_pass'].forEach(sku => g4.appendChild(makeShopCard(sku)));
+  root.appendChild(g4);
+
+  // wire buy clicks
+  root.querySelectorAll('[data-sku]').forEach(b => b.addEventListener('click', (e) => {
+    const sku = e.currentTarget.dataset.sku;
+    purchase(sku);
+  }));
+}
+function makeShopCard(sku) {
+  const def = SKU_DISPLAY[sku] || { ic:'?', stars:0, titleKey:sku, subKey:'' };
+  const owned = (sku.startsWith('skin_') && state.ownedSkins.includes(sku.replace('skin_',''))) ||
+                (sku === 'battle_pass' && state.battlePassUntil > Date.now()) ||
+                (sku === 'streak_shield' && state.shieldUntil > Date.now());
+  const el = document.createElement('div');
+  el.className = 'shop-card' + (owned ? ' owned' : '');
+  el.innerHTML =
+    '<div class="ic">' + def.ic + '</div>' +
+    '<h4>' + t(def.titleKey) + '</h4>' +
+    '<div class="sub">' + t(def.subKey) + '</div>' +
+    '<button class="buy" data-sku="' + sku + '">' + (owned ? '✓' : ('⭐ ' + def.stars)) + '</button>';
+  return el;
+}
+async function purchase(sku) {
+  mp('iap_attempt', { sku });
+  if (!iapEnabled) {
+    toast(t('iap_unavail'));
+    return;
+  }
+  try {
+    const r = await api('/api/iap/create-invoice', { sku });
+    if (!r.ok || !r.link) {
+      toast(t('iap_unavail'));
+      return;
+    }
+    if (TG?.openInvoice) {
+      TG.openInvoice(r.link, (status) => {
+        if (status === 'paid') {
+          toast(t('iap_thanks'));
+          mp('iap_paid', { sku });
+          setTimeout(pollPurchases, 1200);
+        }
+      });
+    } else {
+      window.open(r.link, '_blank');
+    }
+  } catch (e) {
+    toast(t('iap_unavail'));
+  }
+}
+
+/* ============== [JS-16] EARN TAB ============== */
+function renderEarn() {
+  const root = document.getElementById('earn-scroll');
+  if (!root) return;
+  root.innerHTML = '';
+  // bp banner
+  if (state.battlePassUntil > Date.now()) {
+    const days = Math.ceil((state.battlePassUntil - Date.now()) / 86400000);
+    const bp = document.createElement('div'); bp.className = 'bp-banner';
+    bp.innerHTML = '<div><h4>🎖️ ' + t('bp_active', { n: days }) + '</h4><div class="days">2× ⭐ on rewards</div></div>';
+    root.appendChild(bp);
+  } else {
+    const bp = document.createElement('div'); bp.className = 'bp-banner';
+    bp.innerHTML = '<div><h4>🎖️ ' + t('bp_inactive') + '</h4><div class="days">⭐ 500</div></div><button data-sku="battle_pass">⭐ 500</button>';
+    bp.querySelector('button').addEventListener('click', () => purchase('battle_pass'));
+    root.appendChild(bp);
+  }
+
+  // chest
+  const chest = document.createElement('div'); chest.className = 'chest-card';
+  chest.innerHTML = '<h4>🎁 ' + t('chest_title') + '</h4>';
+  const row = document.createElement('div'); row.className = 'chest-row';
+  const today = ymd();
+  const day = chestDayForToday();
+  const claimedToday = state.chestClaimedYMD === today;
+  for (let i = 1; i <= 7; i++) {
+    const cell = document.createElement('div'); cell.className = 'chest-cell';
+    if (i < day) cell.classList.add('claimed');
+    else if (i === day && !claimedToday) cell.classList.add('today');
+    else if (i === day && claimedToday) cell.classList.add('claimed');
+    cell.innerHTML = '<div>'+i+'</div><div class="ic">'+(i===7?'🏆':'🎁')+'</div><div class="rw">+'+CHEST_REWARDS[i-1]+'</div>';
+    row.appendChild(cell);
+  }
+  chest.appendChild(row);
+  const claimBtn = document.createElement('button');
+  claimBtn.className = 'chest-claim';
+  if (claimedToday) { claimBtn.textContent = t('chest_claimed'); claimBtn.disabled = true; }
+  else { claimBtn.textContent = t('chest_claim', { n: day }); claimBtn.addEventListener('click', claimChest); }
+  chest.appendChild(claimBtn);
+  root.appendChild(chest);
+
+  // missions
+  const mh = document.createElement('div'); mh.className = 'shop-section-title'; mh.textContent = t('miss_title');
+  root.appendChild(mh);
+  MISSIONS.forEach(m => root.appendChild(makeMissionRow(m)));
+
+  // leaderboard
+  const lb = document.createElement('div'); lb.className = 'lb-card';
+  lb.innerHTML = '<h4>🏆 ' + t('lb_title') + '</h4><div id="lb-list">…</div>';
+  root.appendChild(lb);
+  fetchLeaderboard();
+}
+
+const MISSIONS = [
+  { id:'play3',   icon:'🎴', titleKey:'miss_play3',   subKey:'miss_play3_sub',   reward: 30, kind:'daily', auto:true, progress: () => Math.min(state.gamesPlayedYMD === ymd() ? state.gamesPlayedToday : 0, 3) / 3 },
+  { id:'chain5',  icon:'⚡', titleKey:'miss_chain5',  subKey:'miss_chain5_sub',  reward: 30, kind:'daily', auto:true, progress: () => 0 },
+  { id:'share',   icon:'📨', titleKey:'miss_share',   subKey:'miss_share_sub',   reward: 40, kind:'oneshot', action:'share' },
+  { id:'follow',  icon:'📢', titleKey:'miss_follow',  subKey:'miss_follow_sub',  reward: 40, kind:'oneshot', action:'follow', url:'https://t.me/solitairequestgame' },
+  { id:'streak7', icon:'🔥', titleKey:'miss_streak7', subKey:'miss_streak7_sub', reward: 100, kind:'oneshot', auto:true, progress: () => Math.min(state.streak, 7) / 7 }
+];
+
+function makeMissionRow(m) {
+  const el = document.createElement('div'); el.className = 'mission';
+  const cs = (state.missions && state.missions[m.id]) || {};
+  const today = ymd();
+  const claimedToday = cs.claimedYMD === today;
+  const completedOnce = !!cs.claimed;
+  const goneOut = !!cs.goneOut;
+  let btnLabel = t('mission_go'), btnClass = '';
+  if (m.auto) {
+    const p = m.progress ? m.progress() : 0;
+    if ((m.kind === 'daily' && claimedToday) || (m.kind === 'oneshot' && completedOnce)) { btnLabel = t('mission_done'); btnClass = 'done'; }
+    else if (p >= 1) { btnLabel = t('mission_claim'); }
+    else btnLabel = Math.floor(p * 100) + '%';
+  } else {
+    if ((m.kind === 'oneshot' && completedOnce)) { btnLabel = t('mission_done'); btnClass = 'done'; }
+    else if (goneOut) { btnLabel = t('mission_check'); btnClass = 'check'; }
+  }
+  el.innerHTML =
+    '<div class="ic">' + m.icon + '</div>' +
+    '<div class="body"><h5>' + t(m.titleKey) + '</h5><div class="sub">' + t(m.subKey) + '</div><div class="reward">🪙 ' + m.reward + '</div></div>' +
+    '<button class="btn ' + btnClass + '">' + btnLabel + '</button>';
+  el.querySelector('button').addEventListener('click', () => handleMission(m));
+  return el;
+}
+
+function handleMission(m) {
+  const cs = state.missions[m.id] || {};
+  state.missions[m.id] = cs;
+  const today = ymd();
+  if (m.kind === 'daily' && cs.claimedYMD === today) return;
+  if (m.kind === 'oneshot' && cs.claimed) return;
+  if (m.auto) {
+    const p = m.progress ? m.progress() : 0;
+    if (p < 1) { toast(Math.floor(p * 100) + '%'); return; }
+    grantMission(m); return;
+  }
+  if (!cs.goneOut) {
+    cs.goneOut = true; saveState(); renderEarn();
+    if (m.action === 'share') {
+      const url = (TG && TG.openTelegramLink) ? 'https://t.me/share/url?url=' + encodeURIComponent(window.location.href) + '&text=' + encodeURIComponent(t('welcome_t')) : window.location.href;
+      try { TG?.openTelegramLink ? TG.openTelegramLink(url) : window.open(url, '_blank'); } catch { window.open(url, '_blank'); }
+    } else if (m.action === 'follow' && m.url) {
+      try { TG?.openTelegramLink ? TG.openTelegramLink(m.url) : window.open(m.url, '_blank'); } catch { window.open(m.url, '_blank'); }
+    }
+  } else {
+    grantMission(m);
+  }
+}
+
+function grantMission(m) {
+  const cs = state.missions[m.id] || {};
+  state.missions[m.id] = cs;
+  const bp = state.battlePassUntil > Date.now() ? 2 : 1;
+  state.coins += m.reward * bp;
+  if (m.kind === 'daily') cs.claimedYMD = ymd();
+  else cs.claimed = true;
+  saveState(); renderEarn();
+  toast('+' + (m.reward * bp) + ' 🪙');
+  haptic('success');
+  mp('mission_claim', { id: m.id, reward: m.reward * bp });
+}
+
+function chestDayForToday() {
+  const today = ymd();
+  if (state.chestClaimedYMD === today) return state.chestDay;
+  // yesterday claimed -> advance; else if missed -> reset to 1
+  const yest = new Date(Date.now() - 86400000); const yymd = ymd(yest);
+  if (state.chestClaimedYMD === yymd) return Math.min(7, (state.chestDay || 0) + 1);
+  if (state.chestClaimedYMD === '') return 1;
+  return 1;
+}
+function claimChest() {
+  const today = ymd();
+  if (state.chestClaimedYMD === today) return;
+  const day = chestDayForToday();
+  const bp = state.battlePassUntil > Date.now() ? 2 : 1;
+  const reward = CHEST_REWARDS[day - 1] * bp;
+  state.coins += reward;
+  state.chestDay = day;
+  state.chestClaimedYMD = today;
+  saveState();
+  haptic('success');
+  toast('+' + reward + ' 🪙');
+  mp('chest_claim', { day, reward });
+  renderEarn();
+}
+
+async function fetchLeaderboard() {
+  try {
+    const r = await fetch('/api/lb');
+    const j = await r.json();
+    const list = document.getElementById('lb-list');
+    if (!list) return;
+    list.innerHTML = '';
+    (j.players || []).slice(0, 25).forEach((p, i) => {
+      const row = document.createElement('div');
+      row.className = 'lb-row' + (state.uid && p.uid === state.uid ? ' me' : '');
+      row.innerHTML = '<div class="rank">' + (i+1) + '</div><div class="name">' + escapeHTML(p.name) + '</div><div class="pts">⭐ ' + p.stars + '</div>';
+      list.appendChild(row);
+    });
+  } catch {}
+}
+function escapeHTML(s) { return (s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+async function submitLeaderboard() {
+  try {
+    await api('/api/lb/submit', { stars: state.stars, coins: state.coins, level: state.maxLevelUnlocked });
+  } catch {}
+}
+
+/* ============== [JS-17] MODALS ============== */
+function openModal(html, onMount) {
+  const root = document.getElementById('modal-root');
+  root.innerHTML = '<div class="modal">' + html + '</div>';
+  root.classList.add('open');
+  root.onclick = (ev) => { if (ev.target === root) closeModal(); };
+  if (onMount) onMount(root.firstElementChild);
+}
+function closeModal() {
+  const root = document.getElementById('modal-root');
+  root.classList.remove('open');
+  root.innerHTML = '';
+}
+function openLevelCompleteModal(stars) {
+  const def = LEVELS.find(l => l.id === game.levelId);
+  const reward = 50 + stars * 30 + (state.battlePassUntil > Date.now() ? 30 : 0);
+  const next = game.levelId + 1;
+  const html =
+    '<button class="x" onclick="closeModal();showMapScreen();renderMap()">✕</button>' +
+    '<h3>' + t('lvl_complete') + '</h3>' +
+    '<p>' + t('level', { n: game.levelId }) + '</p>' +
+    '<div class="stars-display">' +
+      '<div class="st" id="cs1">★</div>' +
+      '<div class="st" id="cs2">★</div>' +
+      '<div class="st" id="cs3">★</div>' +
+    '</div>' +
+    '<div class="reward-row">' +
+      '<div class="reward-chip" id="rc-score">' + t('score') + ' 0</div>' +
+      '<div class="reward-chip" id="rc-coins">🪙 +0</div>' +
+    '</div>' +
+    '<div class="cta-row">' +
+      '<button class="cta secondary" id="cta-map">' + t('btn_map') + '</button>' +
+      (next <= LEVELS.length ? '<button class="cta" id="cta-next">' + t('btn_next') + ' →</button>' : '<button class="cta secondary" disabled>' + t('coming_soon') + '</button>') +
+    '</div>';
+  openModal(html, () => {
+    document.getElementById('cta-map').addEventListener('click', () => { closeModal(); showMapScreen(); renderMap(); });
+    const nxt = document.getElementById('cta-next');
+    if (nxt) nxt.addEventListener('click', () => { closeModal(); openPreLevelModal(next); });
+    // stars animate in one-at-a-time
+    const ids = ['cs1','cs2','cs3'];
+    for (let i = 0; i < stars; i++) {
+      setTimeout(() => {
+        const el = document.getElementById(ids[i]);
+        if (el) el.classList.add('lit');
+        beepWin();
+        haptic('success');
+      }, 350 + i * 380);
+    }
+    // count-up score
+    countUp(document.getElementById('rc-score'), 0, game.score, 1100, v => t('score') + ' ' + (v|0));
+    // count-up coins after a beat
+    setTimeout(() => countUp(document.getElementById('rc-coins'), 0, reward, 800, v => '🪙 +' + (v|0)), 600);
+  });
+  // intro chime, big payoff
+  setTimeout(() => beepWin(), 200);
+  haptic('success');
+}
+
+function countUp(el, from, to, durMs, fmt) {
+  if (!el) return;
+  const t0 = performance.now();
+  function tick(now) {
+    const p = clamp((now - t0) / durMs, 0, 1);
+    const e = 1 - Math.pow(1 - p, 3);
+    const v = from + (to - from) * e;
+    el.textContent = fmt ? fmt(v) : String(v | 0);
+    if (p < 1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+function openLevelFailedModal() {
+  const def = LEVELS.find(l => l.id === game.levelId);
+  const html =
+    '<button class="x" onclick="closeModal();showMapScreen();renderMap()">✕</button>' +
+    '<h3>' + t('lvl_failed') + '</h3>' +
+    '<p>' + t('score') + ' ' + game.score + ' / ' + def.par + '</p>' +
+    '<div class="cta-row">' +
+      '<button class="cta secondary" id="cta-map">'+ t('btn_map') +'</button>' +
+      '<button class="cta" id="cta-retry">'+ t('btn_retry') +'</button>' +
+    '</div>';
+  openModal(html, () => {
+    document.getElementById('cta-map').addEventListener('click', () => { closeModal(); showMapScreen(); renderMap(); });
+    document.getElementById('cta-retry').addEventListener('click', () => { closeModal(); startLevel(game.levelId); });
+  });
+  beepLose();
+  haptic('err');
+}
+function openSettingsModal() {
+  const sn = state.settings;
+  const langs = ['en','ru','es','pt','fr','de','uk','nl','it','sv','pl','tr','ar','he','hi','id','vi','zh','ko','ja'];
+  const langGrid = langs.map(l => '<div class="lang-cell ' + (sn.lang === l ? 'on':'') + '" data-lang="' + l + '">' + l.toUpperCase() + '</div>').join('');
+  const html =
+    '<button class="x" onclick="closeModal()">✕</button>' +
+    '<h3>' + t('settings') + '</h3>' +
+    '<div class="set-row"><div class="lbl">' + t('sound') + '</div><div class="toggle ' + (sn.sound?'on':'') + '" data-tog="sound"><div class="dot"></div></div></div>' +
+    '<div class="set-row"><div class="lbl">' + t('haptics') + '</div><div class="toggle ' + (sn.haptics?'on':'') + '" data-tog="haptics"><div class="dot"></div></div></div>' +
+    '<div class="set-row" style="display:block"><div class="lbl" style="margin-bottom:6px">' + t('language') + '</div><div class="lang-grid">' + langGrid + '</div></div>' +
+    '<div style="text-align:center;margin-top:14px;font-size:12px;color:var(--ink-soft)">' +
+      '<a href="privacy.html" target="_blank" style="color:#9aa9ff;margin:0 8px">' + t('privacy') + '</a>·' +
+      '<a href="terms.html" target="_blank" style="color:#9aa9ff;margin:0 8px">' + t('terms') + '</a>' +
+    '</div>' +
+    '<div class="cta-row"><button class="cta secondary" id="cta-howto">' + t('how_to_play') + '</button></div>';
+  openModal(html, (el) => {
+    el.querySelectorAll('.toggle').forEach(tg => tg.addEventListener('click', () => {
+      const key = tg.dataset.tog;
+      state.settings[key] = !state.settings[key];
+      tg.classList.toggle('on');
+      saveState();
+    }));
+    el.querySelectorAll('[data-lang]').forEach(lc => lc.addEventListener('click', () => {
+      const l = lc.dataset.lang;
+      state.settings.lang = l;
+      saveState();
+      applyLang();
+      closeModal();
+      openSettingsModal();
+    }));
+    document.getElementById('cta-howto').addEventListener('click', () => { closeModal(); startFTUE(); });
+  });
+}
+function openConfirmLeaveModal() {
+  const html =
+    '<h3>' + t('confirm_leave_t') + '</h3>' +
+    '<p>' + t('confirm_leave_s') + '</p>' +
+    '<div class="cta-row"><button class="cta secondary" id="stay">' + t('btn_stay') + '</button><button class="cta danger" id="leave">' + t('btn_leave') + '</button></div>';
+  openModal(html, () => {
+    document.getElementById('stay').addEventListener('click', closeModal);
+    document.getElementById('leave').addEventListener('click', () => { closeModal(); showMapScreen(); renderMap(); });
+  });
+}
+
+/* ============== [JS-18] FTUE ============== */
+const FTUE_STEPS = [
+  { tKey:'ftue1_t', bKey:'ftue1_b', draw: ftueDrawMatch },
+  { tKey:'ftue2_t', bKey:'ftue2_b', draw: ftueDrawWrap  },
+  { tKey:'ftue3_t', bKey:'ftue3_b', draw: ftueDrawCombo },
+  { tKey:'ftue4_t', bKey:'ftue4_b', draw: ftueDrawDraw  },
+  { tKey:'ftue5_t', bKey:'ftue5_b', draw: ftueDrawStars }
+];
+let ftueIdx = 0;
+function startFTUE() {
+  ftueIdx = 0; showFTUE();
+}
+function showFTUE() {
+  const step = FTUE_STEPS[ftueIdx];
+  const dotsHtml = FTUE_STEPS.map((s,i) => '<div class="d' + (i===ftueIdx?' on':'') + '"></div>').join('');
+  const html =
+    '<button class="x" id="ftue-skip">✕</button>' +
+    '<h3>' + t(step.tKey) + '</h3>' +
+    '<div class="ftue-canvas-wrap"><canvas id="ftue-cv" width="560" height="400"></canvas></div>' +
+    '<p>' + t(step.bKey) + '</p>' +
+    '<div class="ftue-dots">' + dotsHtml + '</div>' +
+    '<div class="cta-row">' +
+      (ftueIdx > 0 ? '<button class="cta secondary" id="ftue-back">←</button>' : '<button class="cta secondary" id="ftue-skip2">'+ t('btn_leave') +'</button>') +
+      '<button class="cta" id="ftue-next">' + (ftueIdx === FTUE_STEPS.length - 1 ? '✓' : '→') + '</button>' +
+    '</div>';
+  openModal(html, () => {
+    const cv = document.getElementById('ftue-cv');
+    if (cv) {
+      const c2 = cv.getContext('2d');
+      let t0 = performance.now();
+      function loop() {
+        if (!document.body.contains(cv)) return;
+        const dt = performance.now() - t0;
+        step.draw(c2, dt);
+        requestAnimationFrame(loop);
+      }
+      loop();
+    }
+    document.getElementById('ftue-skip').addEventListener('click', () => { state.ftueDone = true; saveState(); closeModal(); });
+    document.getElementById('ftue-skip2')?.addEventListener('click', () => { state.ftueDone = true; saveState(); closeModal(); });
+    document.getElementById('ftue-back')?.addEventListener('click', () => { ftueIdx--; closeModal(); showFTUE(); });
+    document.getElementById('ftue-next').addEventListener('click', () => {
+      if (ftueIdx === FTUE_STEPS.length - 1) { state.ftueDone = true; saveState(); closeModal(); }
+      else { ftueIdx++; closeModal(); showFTUE(); }
+    });
+  });
+}
+
+function ftueDrawCard(c, x, y, rank, suit, scale) {
+  scale = scale || 1;
+  c.save(); c.translate(x, y); c.scale(scale, scale); c.translate(-30, -42);
+  c.fillStyle='rgba(0,0,0,.35)';
+  drawRoundedRect(c, 2, 4, 60, 84, 8); c.fill();
+  c.fillStyle='#fffcf2';
+  drawRoundedRect(c, 0, 0, 60, 84, 8); c.fill();
+  c.fillStyle = SUIT_COLOR[SUITS[suit]];
+  c.font='800 16px Inter, sans-serif'; c.textBaseline='top'; c.textAlign='left';
+  c.fillText(RANK_LABEL[rank], 5, 4);
+  c.font='800 30px Inter, sans-serif'; c.textAlign='center'; c.textBaseline='middle';
+  c.fillText(SUITS[suit], 30, 44);
+  c.restore();
+}
+
+function ftueDrawMatch(c, dt) {
+  c.clearRect(0,0,560,400);
+  c.fillStyle = 'rgba(255,255,255,0.02)'; c.fillRect(0,0,560,400);
+  // mini tableau with 4 cards
+  ftueDrawCard(c, 160, 150, 7, 1);
+  ftueDrawCard(c, 280, 150, 9, 2);
+  ftueDrawCard(c, 400, 150, 5, 0);
+  // waste
+  ftueDrawCard(c, 280, 300, 8, 0);
+  // pulse arrow from waste up to 7 and 9
+  const k = (dt % 1600) / 1600;
+  c.strokeStyle = '#ffd166'; c.lineWidth = 3;
+  c.setLineDash([4,4]);
+  const x1 = 160, x2 = 400;
+  const x = lerp(x1, x2, k);
+  c.beginPath(); c.moveTo(280, 280); c.lineTo(x, 180); c.stroke();
+  c.setLineDash([]);
+  c.fillStyle = '#ffd166';
+  c.font='900 16px Inter, sans-serif'; c.textAlign='center';
+  c.fillText('±1', 280, 380);
+}
+function ftueDrawWrap(c, dt) {
+  c.clearRect(0,0,560,400);
+  ftueDrawCard(c, 130, 200, 13, 0); // K
+  ftueDrawCard(c, 280, 200, 1, 2);  // A
+  ftueDrawCard(c, 430, 200, 2, 1);  // 2
+  // connecting arcs
+  const k = (dt % 1600) / 1600;
+  c.strokeStyle='#06d6a0'; c.lineWidth = 3;
+  c.beginPath();
+  c.arc(205, 200, 75, Math.PI, Math.PI*2);
+  c.stroke();
+  c.beginPath();
+  c.arc(355, 200, 75, Math.PI, Math.PI*2);
+  c.stroke();
+  // moving dot
+  c.fillStyle = '#ffd166';
+  const arc = (k * 2) % 2;
+  let ang;
+  if (arc < 1) { ang = Math.PI + arc * Math.PI; const x = 205 + Math.cos(ang) * 75; const y = 200 + Math.sin(ang) * 75; c.beginPath(); c.arc(x,y,6,0,Math.PI*2); c.fill(); }
+  else { const a = arc - 1; ang = Math.PI + a * Math.PI; const x = 355 + Math.cos(ang) * 75; const y = 200 + Math.sin(ang) * 75; c.beginPath(); c.arc(x,y,6,0,Math.PI*2); c.fill(); }
+}
+function ftueDrawCombo(c, dt) {
+  c.clearRect(0,0,560,400);
+  // chain meter
+  const w = 400; const x0 = 80; const y0 = 200;
+  c.fillStyle='rgba(255,255,255,0.08)'; drawRoundedRect(c, x0, y0, w, 24, 12); c.fill();
+  const p = ((dt % 2400) / 2400);
+  const grad = c.createLinearGradient(x0, 0, x0 + w, 0);
+  grad.addColorStop(0,'#06d6a0'); grad.addColorStop(0.5,'#ffd166'); grad.addColorStop(1,'#ef476f');
+  c.fillStyle = grad; drawRoundedRect(c, x0, y0, w * p, 24, 12); c.fill();
+  // tier labels
+  c.fillStyle='#fff'; c.font='800 14px Inter, sans-serif'; c.textAlign='center';
+  c.fillText('x2', x0 + w * 0.3, y0 - 10);
+  c.fillText('x3', x0 + w * 0.5, y0 - 10);
+  c.fillText('x5', x0 + w * 0.7, y0 - 10);
+  c.fillText('x10', x0 + w * 0.95, y0 - 10);
+  c.font='900 28px Inter, sans-serif';
+  if (p > 0.95) c.fillText('INCREDIBLE!', 280, 100);
+  else if (p > 0.7) c.fillText('AMAZING!', 280, 100);
+  else if (p > 0.5) c.fillText('GREAT!', 280, 100);
+  else if (p > 0.3) c.fillText('NICE!', 280, 100);
+}
+function ftueDrawDraw(c, dt) {
+  c.clearRect(0,0,560,400);
+  // stock + waste
+  c.fillStyle='#2a0f5a'; drawRoundedRect(c, 360, 160, 80, 110, 10); c.fill();
+  c.strokeStyle='rgba(255,255,255,0.25)'; c.setLineDash([4,4]); drawRoundedRect(c, 370, 170, 60, 90, 8); c.stroke(); c.setLineDash([]);
+  c.fillStyle='#fff'; c.font='900 14px Inter, sans-serif'; c.textAlign='center';
+  c.fillText('STOCK', 400, 290);
+  ftueDrawCard(c, 160, 220, 7, 2, 1.2);
+  c.fillStyle='#ffd166'; c.font='900 16px Inter, sans-serif';
+  c.fillText('Tap stock when stuck', 280, 90);
+  // moving finger
+  const k = (dt % 1800) / 1800;
+  const x = lerp(400, 200, k);
+  c.fillStyle='rgba(255,255,255,0.9)';
+  c.beginPath(); c.arc(x, 220, 10, 0, Math.PI*2); c.fill();
+}
+function ftueDrawStars(c, dt) {
+  c.clearRect(0,0,560,400);
+  const k = (dt % 2400) / 2400;
+  c.fillStyle='#ffd166'; c.font='900 60px Inter, sans-serif'; c.textAlign='center';
+  const scales = [k*3, k*3-1, k*3-2];
+  scales.forEach((s, i) => {
+    const v = clamp(s, 0, 1);
+    if (v <= 0) return;
+    c.save();
+    c.translate(180 + i*100, 200);
+    const sc = easeOutBack(v);
+    c.scale(sc, sc);
+    c.fillText('★', 0, 20);
+    c.restore();
+  });
+  c.fillStyle='#fff'; c.font='800 16px Inter, sans-serif';
+  c.fillText('Score higher → more stars', 280, 320);
+}
+
+/* ============== [JS-19] MIXPANEL + API ============== */
+let iapEnabled = false;
+let mixpanelEnabled = false;
+let mpQueue = [];
+function mp(event, props) {
+  mpQueue.push({ event, properties: props || {} });
+  if (mpQueue.length >= 8) flushMP();
+  scheduleFlush();
+}
+let mpFlushTimer = null;
+function scheduleFlush() {
+  if (mpFlushTimer) return;
+  mpFlushTimer = setTimeout(() => { mpFlushTimer = null; flushMP(); }, 4000);
+}
+async function flushMP() {
+  if (!mpQueue.length) return;
+  if (!mixpanelEnabled) { mpQueue = []; return; }
+  const events = mpQueue.slice();
+  mpQueue = [];
+  try {
+    await fetch('/api/mp/track', {
+      method:'POST',
+      headers: {
+        'content-type':'application/json',
+        'x-telegram-initdata': TG?.initData || ''
+      },
+      body: JSON.stringify({ events })
+    });
+  } catch {}
+}
+async function api(path, body) {
+  const r = await fetch(path, {
+    method:'POST',
+    headers: {
+      'content-type':'application/json',
+      'x-telegram-initdata': TG?.initData || ''
+    },
+    body: JSON.stringify(body || {})
+  });
+  return r.json();
+}
+async function fetchFlags() {
+  try {
+    const r = await fetch('/api/flags'); const j = await r.json();
+    iapEnabled = !!j.iapEnabled; mixpanelEnabled = !!j.mixpanelEnabled;
+  } catch {}
+}
+async function pushHeartbeat() {
+  const ts = Date.now();
+  // streak risk = next UTC midnight
+  const tomorrow = new Date(); tomorrow.setUTCHours(20, 0, 0, 0);
+  const riskAt = tomorrow.getTime();
+  try {
+    await fetch('/api/heartbeat', {
+      method:'POST',
+      headers: { 'content-type':'application/json', 'x-telegram-initdata': TG?.initData || '' },
+      body: JSON.stringify({ lang: state.settings.lang, streak: state.streak, streakRiskAt: riskAt, level: state.maxLevelUnlocked, stars: state.stars, coins: state.coins })
+    });
+  } catch {}
+}
+async function pollPurchases() {
+  try {
+    const r = await fetch('/api/poll-purchases', { headers: { 'x-telegram-initdata': TG?.initData || '' } });
+    const j = await r.json();
+    if (Array.isArray(j.grants)) j.grants.forEach(applyGrant);
+  } catch {}
+}
+function applyGrant(g) {
+  const gr = g.grant || {};
+  if (gr.coins) state.coins += gr.coins | 0;
+  if (gr.wilds) state.boosters.wild += gr.wilds | 0;
+  if (gr.shuffles) state.boosters.shuffle += gr.shuffles | 0;
+  if (gr.undos) state.boosters.undo += gr.undos | 0;
+  if (gr.revives) state.boosters.revive += gr.revives | 0;
+  if (gr.skin) { if (!state.ownedSkins.includes(gr.skin)) state.ownedSkins.push(gr.skin); }
+  if (gr.shieldDays) state.shieldUntil = Date.now() + gr.shieldDays * 86400000;
+  if (gr.battlePassDays) state.battlePassUntil = Date.now() + gr.battlePassDays * 86400000;
+  saveState();
+  renderHUD();
+  toast(t('iap_thanks'));
+}
+
+/* ============== [JS-19A] FLAGSHIP FEATURES (lives, achievements, postcards, mascot, splash, world chests, daily, stats) ============== */
+
+// ---------- LIVES ----------
+function rolloverLivesIfNeeded() {
+  // top up lives if 30min ticks have elapsed since livesRefillAt
+  if (state.lives >= LIVES_MAX) { state.livesRefillAt = 0; return; }
+  if (!state.livesRefillAt) { state.livesRefillAt = Date.now() + LIVES_REGEN_MS; return; }
+  const now = Date.now();
+  while (state.lives < LIVES_MAX && now >= state.livesRefillAt) {
+    state.lives += 1;
+    state.livesRefillAt = state.livesRefillAt + LIVES_REGEN_MS;
+  }
+  if (state.lives >= LIVES_MAX) state.livesRefillAt = 0;
+}
+function consumeLife() {
+  rolloverLivesIfNeeded();
+  if (state.lives <= 0) return false;
+  state.lives -= 1;
+  if (!state.livesRefillAt) state.livesRefillAt = Date.now() + LIVES_REGEN_MS;
+  saveState(); renderHUD();
+  return true;
+}
+function gainLife(n) {
+  state.lives = Math.min(LIVES_MAX, (state.lives|0) + (n|0));
+  if (state.lives >= LIVES_MAX) state.livesRefillAt = 0;
+  saveState(); renderHUD();
+}
+function refillLivesWithStars() {
+  // costs Stars via IAP; we'll route through a synthetic SKU
+  if (state.stars >= LIVES_REFILL_COST) {
+    // for now this is a soft purchase (use stars currency) — real version would call IAP
+    // since "Stars" here means in-game ⭐ earned from levels, this is a free top-up via game stars (different from Telegram Stars purchase)
+    // Telegram-Stars refill would be a SKU; we'll wire that separately
+    toast(t('iap_unavail'));
+  } else {
+    toast(t('iap_unavail'));
+  }
+}
+
+function formatLivesTimer() {
+  rolloverLivesIfNeeded();
+  if (state.lives >= LIVES_MAX) return '';
+  if (!state.livesRefillAt) return '';
+  const ms = state.livesRefillAt - Date.now();
+  if (ms <= 0) return '';
+  const m = Math.max(1, Math.ceil(ms / 60000));
+  return m + 'm';
+}
+
+// ---------- ACHIEVEMENTS ----------
+function checkAchievements() {
+  let granted = 0;
+  for (const ach of ACHIEVEMENTS) {
+    const cur = state.achievements[ach.id] || {};
+    if (cur.unlocked) continue;
+    if (ach.check(state)) {
+      cur.unlocked = true; cur.unlockedAt = Date.now();
+      state.achievements[ach.id] = cur;
+      granted += 1;
+      showAchievementPopup(ach);
+    }
+  }
+  if (granted) saveState();
+}
+function showAchievementPopup(ach) {
+  const el = document.getElementById('ach-popup');
+  if (!el) return;
+  el.querySelector('.ic').textContent = ach.icon;
+  el.querySelector('.t').textContent = t('achievement_unlocked');
+  el.querySelector('.nm').textContent = t(ach.tKey);
+  el.classList.add('show');
+  haptic('success');
+  beepWin();
+  clearTimeout(showAchievementPopup._t);
+  showAchievementPopup._t = setTimeout(() => el.classList.remove('show'), 2200);
+}
+function claimAchievement(achId) {
+  const ach = ACHIEVEMENTS.find(a => a.id === achId);
+  if (!ach) return;
+  const cur = state.achievements[achId] || {};
+  if (!cur.unlocked || cur.claimed) return;
+  cur.claimed = true; cur.claimedAt = Date.now();
+  state.achievements[achId] = cur;
+  const bp = state.battlePassUntil > Date.now() ? 2 : 1;
+  state.coins += ach.reward * bp;
+  saveState(); renderHUD();
+  toast('+' + (ach.reward * bp) + ' 🪙');
+  haptic('success');
+  mp('achievement_claim', { id: achId, reward: ach.reward * bp });
+  renderEarn();
+}
+
+// ---------- POSTCARDS ----------
+function ensurePostcard(id) {
+  if (!state.postcards[id]) state.postcards[id] = { pieces: 0, complete: false, claimedAt: 0 };
+  return state.postcards[id];
+}
+function awardMemoryPiece() {
+  // find next incomplete postcard
+  for (const pc of POSTCARDS) {
+    const ps = ensurePostcard(pc.id);
+    if (!ps.complete) {
+      ps.pieces += 1;
+      if (ps.pieces >= pc.pieces) {
+        ps.complete = true; ps.claimedAt = Date.now();
+        state.coins += 300;
+        showPostcardComplete(pc);
+      }
+      saveState();
+      return;
+    }
+  }
+}
+function showPostcardComplete(pc) {
+  // small toast — full reveal happens when user visits Earn tab
+  toast('📸 ' + t(pc.tKey));
+  haptic('success');
+}
+function drawPostcardArt(c, w, h, key, complete) {
+  c.save();
+  c.fillStyle = '#0b0420';
+  c.fillRect(0, 0, w, h);
+  if (!complete) {
+    // locked silhouette
+    c.fillStyle = 'rgba(255,255,255,0.05)';
+    c.fillRect(0, 0, w, h);
+    c.fillStyle = 'rgba(255,255,255,0.15)';
+    c.font = 'bold ' + Math.floor(h*0.45) + 'px Inter, sans-serif';
+    c.textAlign='center'; c.textBaseline='middle';
+    c.fillText('?', w/2, h/2);
+    c.restore();
+    return;
+  }
+  // themed art per postcard key
+  if (key === 'rose_gate') {
+    // gold gate + sky + rose
+    const g = c.createLinearGradient(0, 0, 0, h);
+    g.addColorStop(0, '#ff9bd2'); g.addColorStop(1, '#ffd166');
+    c.fillStyle = g; c.fillRect(0, 0, w, h);
+    c.fillStyle = '#5a2ca0'; c.fillRect(0, h*0.75, w, h*0.25);
+    // gate
+    c.strokeStyle='#ffd166'; c.lineWidth=3;
+    c.beginPath(); c.moveTo(w*0.3, h*0.75); c.lineTo(w*0.3, h*0.35); c.arc(w*0.5, h*0.35, w*0.2, Math.PI, 0); c.lineTo(w*0.7, h*0.75); c.stroke();
+    c.strokeStyle='#c92f4d';
+    for (let i = 1; i < 5; i++) { c.beginPath(); c.moveTo(w*(0.3 + i*0.08), h*0.75); c.lineTo(w*(0.3 + i*0.08), h*0.55); c.stroke(); }
+    // rose
+    c.fillStyle = '#ef476f';
+    c.beginPath(); c.arc(w*0.5, h*0.62, 9, 0, Math.PI*2); c.fill();
+    c.fillStyle = '#06d6a0';
+    c.fillRect(w*0.49, h*0.65, 2, h*0.1);
+  } else if (key === 'whisperwood') {
+    const g = c.createLinearGradient(0, 0, 0, h);
+    g.addColorStop(0, '#1a4d2e'); g.addColorStop(1, '#0b2818');
+    c.fillStyle = g; c.fillRect(0, 0, w, h);
+    // moon
+    c.fillStyle = '#ffd166'; c.beginPath(); c.arc(w*0.75, h*0.25, 14, 0, Math.PI*2); c.fill();
+    // trees
+    c.fillStyle = '#06d6a0';
+    for (let i = 0; i < 5; i++) {
+      const tx = w * (0.1 + i * 0.2);
+      c.beginPath();
+      c.moveTo(tx, h*0.85); c.lineTo(tx - 14, h*0.55); c.lineTo(tx + 14, h*0.55); c.closePath(); c.fill();
+      c.beginPath();
+      c.moveTo(tx, h*0.65); c.lineTo(tx - 18, h*0.4); c.lineTo(tx + 18, h*0.4); c.closePath(); c.fill();
+    }
+    c.fillStyle = '#4a2c0b';
+    for (let i = 0; i < 5; i++) {
+      const tx = w * (0.1 + i * 0.2);
+      c.fillRect(tx - 3, h*0.85, 6, h*0.1);
+    }
+  } else if (key === 'coral_reef') {
+    const g = c.createLinearGradient(0, 0, 0, h);
+    g.addColorStop(0, '#118ab2'); g.addColorStop(1, '#073b4c');
+    c.fillStyle = g; c.fillRect(0, 0, w, h);
+    // bubbles
+    c.fillStyle = 'rgba(255,255,255,0.4)';
+    for (let i = 0; i < 8; i++) {
+      c.beginPath(); c.arc(w*Math.random(), h*Math.random(), 3 + Math.random()*4, 0, Math.PI*2); c.fill();
+    }
+    // coral
+    c.fillStyle = '#ef476f';
+    c.beginPath();
+    c.moveTo(w*0.2, h);
+    c.bezierCurveTo(w*0.25, h*0.7, w*0.15, h*0.6, w*0.3, h*0.4);
+    c.bezierCurveTo(w*0.35, h*0.6, w*0.4, h*0.7, w*0.4, h);
+    c.fill();
+    c.fillStyle = '#ffd166';
+    c.beginPath();
+    c.moveTo(w*0.65, h); c.bezierCurveTo(w*0.7, h*0.6, w*0.6, h*0.5, w*0.75, h*0.35);
+    c.bezierCurveTo(w*0.8, h*0.5, w*0.85, h*0.7, w*0.85, h); c.fill();
+    // fish
+    c.fillStyle = '#06d6a0';
+    c.beginPath();
+    c.ellipse(w*0.5, h*0.3, 12, 6, 0, 0, Math.PI*2); c.fill();
+    c.beginPath();
+    c.moveTo(w*0.5 + 10, h*0.3); c.lineTo(w*0.5 + 18, h*0.27); c.lineTo(w*0.5 + 18, h*0.33); c.closePath(); c.fill();
+  } else if (key === 'throne_room') {
+    const g = c.createLinearGradient(0, 0, 0, h);
+    g.addColorStop(0, '#3a1d6a'); g.addColorStop(1, '#1a0b2e');
+    c.fillStyle = g; c.fillRect(0, 0, w, h);
+    // throne
+    c.fillStyle = '#ef476f';
+    c.fillRect(w*0.35, h*0.4, w*0.3, h*0.45);
+    c.fillStyle = '#ffd166';
+    c.fillRect(w*0.35, h*0.4, w*0.3, 6);
+    // crown floating
+    c.fillStyle = '#ffd166';
+    c.beginPath();
+    c.moveTo(w*0.42, h*0.25); c.lineTo(w*0.45, h*0.18); c.lineTo(w*0.5, h*0.22); c.lineTo(w*0.55, h*0.18); c.lineTo(w*0.58, h*0.25); c.lineTo(w*0.58, h*0.32); c.lineTo(w*0.42, h*0.32);
+    c.closePath(); c.fill();
+    // pillars
+    c.fillStyle = '#fdfaf3';
+    c.fillRect(w*0.1, h*0.3, 8, h*0.5);
+    c.fillRect(w*0.85, h*0.3, 8, h*0.5);
+    // floor
+    c.fillStyle = '#5a2ca0';
+    c.fillRect(0, h*0.85, w, h*0.15);
+  } else if (key === 'crystal_heart') {
+    const g = c.createRadialGradient(w/2, h/2, 0, w/2, h/2, w*0.6);
+    g.addColorStop(0, '#a83af0'); g.addColorStop(1, '#0b0420');
+    c.fillStyle = g; c.fillRect(0, 0, w, h);
+    // sparkles
+    c.fillStyle = 'rgba(255,255,255,0.6)';
+    for (let i = 0; i < 12; i++) {
+      c.beginPath(); c.arc(w*Math.random(), h*Math.random(), 1 + Math.random()*1.5, 0, Math.PI*2); c.fill();
+    }
+    // heart-crystal
+    c.fillStyle = '#ef476f';
+    c.beginPath();
+    const cx = w/2, cy = h*0.55;
+    c.moveTo(cx, cy + 18);
+    c.bezierCurveTo(cx - 24, cy, cx - 18, cy - 18, cx, cy - 6);
+    c.bezierCurveTo(cx + 18, cy - 18, cx + 24, cy, cx, cy + 18);
+    c.fill();
+    c.strokeStyle = '#fff'; c.lineWidth = 1.5;
+    c.beginPath(); c.moveTo(cx - 5, cy - 5); c.lineTo(cx + 3, cy); c.lineTo(cx - 2, cy + 6); c.stroke();
+  } else {
+    c.fillStyle = '#5a2ca0'; c.fillRect(0, 0, w, h);
+  }
+  c.restore();
+}
+
+// ---------- MASCOT ----------
+const mascot = {
+  el: null, canvas: null, ctx: null, textEl: null,
+  visible: false, bobT: 0, lastTip: 0
+};
+function initMascot() {
+  mascot.el = document.getElementById('mascot-bubble');
+  mascot.canvas = document.getElementById('mascot-canvas');
+  if (!mascot.canvas) return;
+  mascot.ctx = mascot.canvas.getContext('2d');
+  mascot.textEl = document.getElementById('mascot-text');
+  mascot.bobT = 0;
+}
+function drawMascot() {
+  if (!mascot.ctx) return;
+  const c = mascot.ctx; const W = mascot.canvas.width, H = mascot.canvas.height;
+  c.clearRect(0, 0, W, H);
+  mascot.bobT += 1;
+  const bob = Math.sin(mascot.bobT * 0.06) * 3;
+  c.save(); c.translate(W/2, H/2 + bob);
+  // body — chubby owl
+  c.fillStyle = '#5a2ca0';
+  c.beginPath(); c.ellipse(0, 6, 36, 38, 0, 0, Math.PI*2); c.fill();
+  // belly
+  c.fillStyle = '#fdfaf3';
+  c.beginPath(); c.ellipse(0, 14, 22, 24, 0, 0, Math.PI*2); c.fill();
+  // eyes
+  c.fillStyle = '#fff';
+  c.beginPath(); c.arc(-12, -8, 11, 0, Math.PI*2); c.fill();
+  c.beginPath(); c.arc(12, -8, 11, 0, Math.PI*2); c.fill();
+  // pupils — follow chain progress
+  const px = clamp(game.chain * 0.5 - 1, -3, 3);
+  c.fillStyle = '#1a0b2e';
+  c.beginPath(); c.arc(-12 + px, -7, 5, 0, Math.PI*2); c.fill();
+  c.beginPath(); c.arc(12 + px, -7, 5, 0, Math.PI*2); c.fill();
+  c.fillStyle = '#fff';
+  c.beginPath(); c.arc(-10 + px, -9, 2, 0, Math.PI*2); c.fill();
+  c.beginPath(); c.arc(14 + px, -9, 2, 0, Math.PI*2); c.fill();
+  // beak
+  c.fillStyle = '#ffd166';
+  c.beginPath(); c.moveTo(0, 0); c.lineTo(-6, 8); c.lineTo(6, 8); c.closePath(); c.fill();
+  // tufts
+  c.fillStyle = '#5a2ca0';
+  c.beginPath(); c.moveTo(-22, -22); c.lineTo(-18, -34); c.lineTo(-12, -22); c.closePath(); c.fill();
+  c.beginPath(); c.moveTo(22, -22); c.lineTo(18, -34); c.lineTo(12, -22); c.closePath(); c.fill();
+  c.restore();
+}
+function mascotSay(msg, ms) {
+  if (!mascot.el) return;
+  if (!state.settings.haptics && false) {} // noop placeholder
+  mascot.textEl.textContent = msg;
+  mascot.el.classList.add('show');
+  clearTimeout(mascotSay._t);
+  mascotSay._t = setTimeout(() => mascot.el.classList.remove('show'), ms || 3000);
+  mascot.lastTip = Date.now();
+}
+
+// ---------- SPLASH ----------
+function drawSplash() {
+  const cv = document.getElementById('splash-canvas');
+  if (!cv) return;
+  const c = cv.getContext('2d'); const W = cv.width, H = cv.height;
+  let t0 = performance.now();
+  function loop() {
+    if (!document.getElementById('splash') || document.getElementById('splash').classList.contains('gone')) return;
+    const dt = (performance.now() - t0) / 1000;
+    c.clearRect(0, 0, W, H);
+    // 5 cards fanning out
+    const ranks = [13, 1, 2, 11, 12];
+    const suits = [0, 2, 1, 3, 0];
+    for (let i = 0; i < 5; i++) {
+      const ang = (-0.4 + i * 0.2) + Math.sin(dt * 0.8 + i) * 0.04;
+      const dist = 90 + i * 4;
+      const x = W/2 + Math.sin(ang) * dist;
+      const y = H/2 + Math.cos(ang) * dist - dist * 0.4;
+      c.save();
+      c.translate(x, y); c.rotate(ang * 0.7 + Math.sin(dt + i) * 0.05);
+      c.fillStyle='rgba(0,0,0,0.3)';
+      drawRoundedRect(c, -33, -45, 70, 96, 10); c.fill();
+      c.fillStyle='#fffcf2';
+      drawRoundedRect(c, -35, -47, 70, 96, 10); c.fill();
+      c.fillStyle = SUIT_COLOR[SUITS[suits[i]]];
+      c.font='800 18px Inter, sans-serif'; c.textBaseline='top'; c.textAlign='left';
+      c.fillText(RANK_LABEL[ranks[i]], -28, -42);
+      c.font='800 36px Inter, sans-serif'; c.textAlign='center'; c.textBaseline='middle';
+      c.fillText(SUITS[suits[i]], 0, 0);
+      c.restore();
+    }
+    requestAnimationFrame(loop);
+  }
+  loop();
+}
+function dismissSplash() {
+  const el = document.getElementById('splash');
+  if (el) { el.classList.add('gone'); setTimeout(() => el.style.display = 'none', 500); }
+  state.splashSeen = true; saveState();
+  ensureAC(); // unlock audio on first tap
+}
+
+// ---------- COIN RAIN / PEAK FIREWORKS ----------
+const coinRain = { canvas: null, ctx: null, particles: [], running: false };
+function initCoinRain() {
+  coinRain.canvas = document.getElementById('coin-rain');
+  if (!coinRain.canvas) return;
+  coinRain.ctx = coinRain.canvas.getContext('2d');
+}
+function startCoinRain(n) {
+  if (!coinRain.canvas) return;
+  const rect = coinRain.canvas.getBoundingClientRect();
+  coinRain.canvas.width = rect.width * (window.devicePixelRatio || 1);
+  coinRain.canvas.height = rect.height * (window.devicePixelRatio || 1);
+  const ctxR = coinRain.ctx;
+  ctxR.setTransform(window.devicePixelRatio||1, 0, 0, window.devicePixelRatio||1, 0, 0);
+  coinRain.particles = [];
+  for (let i = 0; i < (n || 25); i++) {
+    coinRain.particles.push({ x: Math.random()*rect.width, y: -30 - Math.random()*200, vy: 2 + Math.random()*3, r: 8 + Math.random()*6, rot: Math.random()*Math.PI*2, vr: (Math.random()-0.5)*0.2, alive: true });
+  }
+  coinRain.running = true;
+  requestAnimationFrame(tickCoinRain);
+}
+function tickCoinRain() {
+  if (!coinRain.running) return;
+  const ctxR = coinRain.ctx;
+  const rect = coinRain.canvas.getBoundingClientRect();
+  ctxR.clearRect(0, 0, rect.width, rect.height);
+  let alive = 0;
+  for (const p of coinRain.particles) {
+    if (!p.alive) continue;
+    p.y += p.vy; p.rot += p.vr; p.vy += 0.08;
+    if (p.y > rect.height + 30) { p.alive = false; continue; }
+    alive++;
+    ctxR.save();
+    ctxR.translate(p.x, p.y); ctxR.rotate(p.rot);
+    ctxR.fillStyle = '#ffd166';
+    ctxR.beginPath(); ctxR.ellipse(0, 0, p.r, p.r * 0.6 + 1, 0, 0, Math.PI*2); ctxR.fill();
+    ctxR.strokeStyle = '#b97a1c'; ctxR.lineWidth = 1.2;
+    ctxR.beginPath(); ctxR.ellipse(0, 0, p.r, p.r * 0.6 + 1, 0, 0, Math.PI*2); ctxR.stroke();
+    ctxR.fillStyle = '#b97a1c';
+    ctxR.font = 'bold ' + Math.floor(p.r*1.2) + 'px Inter, sans-serif';
+    ctxR.textAlign='center'; ctxR.textBaseline='middle';
+    ctxR.fillText('★', 0, 0);
+    ctxR.restore();
+  }
+  if (alive > 0) requestAnimationFrame(tickCoinRain);
+  else coinRain.running = false;
+}
+
+// ---------- CHAIN TRAIL ----------
+function spawnChainTrail(card) {
+  // a short trail along the path from card.x, card.y to waste pile, with sparkle particles
+  const target = wastePileNorm();
+  const segs = 10;
+  for (let i = 0; i < segs; i++) {
+    const t = i / segs;
+    game.particles.push({
+      x: lerp(card.x, target.x, t) + (Math.random()-0.5)*0.02,
+      y: lerp(card.y, target.y, t) + (Math.random()-0.5)*0.02,
+      vx: (Math.random()-0.5)*0.4, vy: (Math.random()-0.5)*0.4 - 0.4,
+      t: 0, life: 18 + Math.random()*10,
+      r: 1.5 + Math.random()*1.5, color: ['#ffd166','#06d6a0','#a83af0','#fff'][Math.floor(Math.random()*4)]
+    });
+  }
+}
+
+// ---------- WORLD CHEST ----------
+function checkWorldComplete(worldId) {
+  const w = WORLDS.find(x => x.id === worldId);
+  if (!w) return;
+  if (state.worldsClaimed[worldId]) return;
+  // require: every level in range is starsPerLevel >= 1
+  for (let id = w.range[0]; id <= w.range[1]; id++) {
+    if ((state.starsPerLevel[id]|0) < 1) return;
+  }
+  openWorldChestModal(w);
+}
+function openWorldChestModal(w) {
+  state.worldsClaimed[w.id] = true;
+  state.coins += w.chestCoins;
+  state.boosters.wild = (state.boosters.wild|0) + 3;
+  state.boosters.shuffle = (state.boosters.shuffle|0) + 3;
+  state.boosters.undo = (state.boosters.undo|0) + 5;
+  if (w.chestSkin && !state.ownedSkins.includes(w.chestSkin)) state.ownedSkins.push(w.chestSkin);
+  saveState();
+  const html =
+    '<button class="x" onclick="closeModal()">✕</button>' +
+    '<h3>' + t('world_clear_t') + '</h3>' +
+    '<p>' + t(w.key === 'royal_garden' ? 'world1_t' : w.key === 'forest_cards' ? 'world2_t' : w.key === 'ocean_depths' ? 'world3_t' : w.key === 'castle_heights' ? 'world4_t' : 'world5_t') + '</p>' +
+    '<canvas class="world-chest-art" width="320" height="280" id="wcc"></canvas>' +
+    '<div class="reward-row">' +
+      '<div class="reward-chip">🪙 +' + w.chestCoins + '</div>' +
+      '<div class="reward-chip">🃏 +3</div>' +
+      '<div class="reward-chip">🔀 +3</div>' +
+      (w.chestSkin ? '<div class="reward-chip">🎨 ' + w.chestSkin + '</div>' : '') +
+    '</div>' +
+    '<div class="cta-row"><button class="cta" id="cta-claim">' + t('world_open_chest') + '</button></div>';
+  openModal(html, (el) => {
+    const cv = el.querySelector('#wcc'); const c = cv.getContext('2d');
+    drawWorldChestArt(c, cv.width, cv.height, w);
+    document.getElementById('cta-claim').addEventListener('click', () => { closeModal(); haptic('success'); renderMap(); renderHUD(); });
+  });
+  haptic('success'); beepWin();
+}
+function drawWorldChestArt(c, w, h, world) {
+  c.clearRect(0, 0, w, h);
+  // background glow
+  const g = c.createRadialGradient(w/2, h*0.45, 0, w/2, h*0.45, w*0.7);
+  g.addColorStop(0, world.accent); g.addColorStop(1, 'rgba(0,0,0,0)');
+  c.fillStyle = g; c.fillRect(0, 0, w, h);
+  // chest body
+  c.fillStyle = '#5a2ca0';
+  c.fillRect(w*0.2, h*0.45, w*0.6, h*0.4);
+  // chest lid (open)
+  c.save(); c.translate(w*0.2, h*0.45); c.rotate(-0.4);
+  c.fillStyle = '#7a3cd0';
+  c.fillRect(0, -h*0.2, w*0.6, h*0.2);
+  c.restore();
+  // gold inside
+  c.fillStyle = '#ffd166';
+  c.fillRect(w*0.24, h*0.5, w*0.52, h*0.1);
+  // sparkles
+  c.fillStyle = '#fff';
+  for (let i = 0; i < 16; i++) {
+    const sx = w*(0.2 + Math.random()*0.6);
+    const sy = h*(0.2 + Math.random()*0.4);
+    c.beginPath(); c.arc(sx, sy, 1 + Math.random()*2, 0, Math.PI*2); c.fill();
+  }
+  // icon on top
+  c.fillStyle = '#fff';
+  c.font = 'bold 60px Inter, sans-serif'; c.textAlign='center'; c.textBaseline='middle';
+  c.fillText(world.icon, w/2, h*0.25);
+}
+
+// ---------- PRE-LEVEL SCREEN ----------
+function openPreLevelModal(levelId) {
+  const def = LEVELS.find(l => l.id === levelId);
+  if (!def) return;
+  const world = WORLDS.find(w => levelId >= w.range[0] && levelId <= w.range[1]);
+  const preEquipped = { scissors:false, wildDrop:false, stockBoost:false };
+  function render() {
+    const html =
+      '<button class="x" onclick="closeModal()">✕</button>' +
+      '<h3>' + t('level', { n: levelId }) + (def.boss ? ' 👑' : '') + '</h3>' +
+      '<p>' + (world ? t(['','world1_t','world2_t','world3_t','world4_t','world5_t'][world.id]) : '') + '</p>' +
+      '<div class="target-row">' +
+        '<div class="tg"><div class="lbl">' + t('target') + '</div><div class="val">' + def.par + '</div></div>' +
+        '<div class="tg"><div class="lbl">★★</div><div class="val">' + def.gold + '</div></div>' +
+        '<div class="tg"><div class="lbl">★★★</div><div class="val">' + def.perfect + '</div></div>' +
+      '</div>' +
+      '<div style="font-size:11px;color:var(--ink-soft);margin:8px 4px 4px;text-align:center">' + t('booster_select_s') + '</div>' +
+      '<div class="pre-grid" id="pre-grid"></div>' +
+      '<div class="cta-row">' +
+        '<button class="cta secondary" id="cta-back">←</button>' +
+        '<button class="cta" id="cta-start">' + t('btn_start') + '</button>' +
+      '</div>';
+    openModal(html, () => {
+      const g = document.getElementById('pre-grid');
+      PRE_BOOSTERS.forEach(name => {
+        const have = state.pre[name] | 0;
+        const cell = document.createElement('div');
+        cell.className = 'pre-card' + (preEquipped[name] ? ' equipped' : '') + (have <= 0 ? ' empty' : '');
+        cell.innerHTML =
+          '<span class="cnt' + (have <= 0 ? ' empty' : '') + '">' + have + '</span>' +
+          '<div class="ic">' + PRE_BOOSTER_ICON[name] + '</div>' +
+          '<div class="nm">' + t('booster_' + name.toLowerCase()) + '</div>' +
+          '<div class="sb">' + t('booster_' + name.toLowerCase() + '_s') + '</div>';
+        cell.addEventListener('click', () => {
+          if (have <= 0) { toast(t('not_enough')); return; }
+          preEquipped[name] = !preEquipped[name];
+          render();
+        });
+        g.appendChild(cell);
+      });
+      document.getElementById('cta-back').addEventListener('click', closeModal);
+      document.getElementById('cta-start').addEventListener('click', () => {
+        // consume equipped pre-boosters
+        for (const k of Object.keys(preEquipped)) {
+          if (preEquipped[k]) { state.pre[k] = Math.max(0, (state.pre[k]|0) - 1); }
+        }
+        saveState();
+        closeModal();
+        startLevel(levelId, { pre: { ...preEquipped }, daily: false });
+      });
+    });
+  }
+  render();
+}
+
+// ---------- DAILY CHALLENGE ----------
+async function openDailyChallenge() {
+  const today = ymd();
+  if (state.dailyDoneYMD === today) { toast(t('daily_done')); return; }
+  // pick a deterministic level + seed for everyone today
+  let seed = 1;
+  try { const r = await fetch('/api/daily-seed'); const j = await r.json(); seed = (j.seed >>> 0) || 1; } catch {}
+  // pick a level 10..60 based on player progress
+  const ceil = clamp(state.maxLevelUnlocked, 10, 60);
+  const lid = 10 + (seed % Math.max(1, ceil - 9));
+  startLevel(lid, { daily: true, seed });
+}
+
+// ---------- STATS PANEL ----------
+function renderStatsPanel(root) {
+  const wrap = document.createElement('div');
+  wrap.innerHTML = '<div class="shop-section-title">' + t('stats_title') + '</div>';
+  const grid = document.createElement('div'); grid.className = 'stats-grid';
+  const perfectCount = Object.values(state.starsPerLevel || {}).filter(v => v === 3).length;
+  const completedPCs = Object.values(state.postcards || {}).filter(p => p.complete).length;
+  const stats = [
+    { v: state.totalGames | 0, l: t('stats_games') },
+    { v: state.bestScore | 0, l: t('stats_best_score') },
+    { v: state.bestChain | 0, l: t('stats_best_chain') },
+    { v: state.totalCardsPlayed | 0, l: t('stats_cards_played') },
+    { v: completedPCs + '/5', l: t('stats_postcards') },
+    { v: perfectCount, l: t('stats_perfects') }
+  ];
+  stats.forEach(s => {
+    const c = document.createElement('div'); c.className = 'stat-cell';
+    c.innerHTML = '<div class="v">' + s.v + '</div><div class="l">' + s.l + '</div>';
+    grid.appendChild(c);
+  });
+  wrap.appendChild(grid);
+  root.appendChild(wrap);
+}
+
+// ---------- NEW IN-LEVEL BOOSTERS ----------
+function usePeek() {
+  if ((state.boosters.peek|0) <= 0) { toast(t('not_enough')); return; }
+  state.boosters.peek -= 1; saveState();
+  const next3 = game.stock.slice(-3).reverse();
+  const labels = next3.map(c => RANK_LABEL[c.rank] + SUITS[c.suit]).join('  ');
+  toast('👁 ' + (labels || '—'));
+  haptic('impact');
+  renderHUD();
+}
+function useHammer() {
+  if ((state.boosters.hammer|0) <= 0) { toast(t('not_enough')); return; }
+  // arm hammer to consume on next card tap
+  game.armedBooster = 'hammer';
+  toast(t('armed_tap_card'));
+  renderBoosterRow();
+}
+function usePlus5() {
+  if ((state.boosters.plus5|0) <= 0) { toast(t('not_enough')); return; }
+  state.boosters.plus5 -= 1; saveState();
+  // top up stock by 5 random cards
+  for (let i = 0; i < 5; i++) {
+    game.stock.push({ rank: 1 + Math.floor(Math.random() * 13), suit: Math.floor(Math.random()*4), wild: false });
+  }
+  toast('+5 📦');
+  haptic('success');
+  renderHUD();
+}
+function applyPreBoosters(pre) {
+  if (!pre) return;
+  if (pre.scissors) {
+    const alive = game.cards.filter(c => !c.cleared && !c.faceDown);
+    shuffle(alive, game.rng);
+    for (let i = 0; i < 3 && i < alive.length; i++) {
+      const c = alive[i]; c.cleared = true;
+      spawnParticles(c.x, c.y, 8, '#ef476f');
+    }
+    setTimeout(revealCardsBeneath, 250);
+  }
+  if (pre.wildDrop) {
+    for (let i = 0; i < 3; i++) {
+      const idx = Math.floor(Math.random() * game.stock.length);
+      if (game.stock[idx]) game.stock[idx].wild = true;
+    }
+  }
+  if (pre.stockBoost) {
+    for (let i = 0; i < 5; i++) {
+      game.stock.push({ rank: 1 + Math.floor(Math.random() * 13), suit: Math.floor(Math.random()*4), wild: false });
+    }
+  }
+}
+
+// patch handleArmedBoosterOnCard for hammer
+const _origHandleArmed = handleArmedBoosterOnCard;
+handleArmedBoosterOnCard = function(c) {
+  const b = game.armedBooster;
+  if (b === 'hammer') {
+    if ((state.boosters.hammer|0) <= 0) { armBooster(null); return; }
+    state.boosters.hammer -= 1; saveState();
+    c.cleared = true;
+    spawnParticles(c.x, c.y, 18, '#ef476f');
+    spawnScorePopup(c.x, c.y, '💥');
+    armBooster(null);
+    setTimeout(revealCardsBeneath, 200);
+    renderHUD();
+    haptic('heavy');
+    return;
+  }
+  return _origHandleArmed(c);
+};
+
+// patch armBooster to handle the new instant boosters
+const _origArmBooster = armBooster;
+armBooster = function(name) {
+  if (name === 'peek')    { usePeek(); return; }
+  if (name === 'plus5')   { usePlus5(); return; }
+  if (name === 'hammer')  {
+    if ((state.boosters.hammer|0) <= 0) { toast(t('not_enough')); return; }
+    useHammer(); return;
+  }
+  return _origArmBooster(name);
+};
+
+// patch finishLevel to consume lives + grant memory + check achievements + coin rain + best stats
+const _origFinishLevel = finishLevel;
+finishLevel = function(won) {
+  if (game.finished) return;
+  if (game.chain > (state.bestChain|0)) { state.bestChain = game.chain; }
+  if (won) {
+    if (game.memoryRevealed > 0) {
+      for (let i = 0; i < game.memoryRevealed; i++) awardMemoryPiece();
+    }
+    if (game.score > (state.bestScore|0)) state.bestScore = game.score;
+    state.totalCardsPlayed = (state.totalCardsPlayed|0) + (game.cards.filter(c=>c.cleared).length);
+  } else {
+    if (!game.dailyMode) consumeLife();
+  }
+  _origFinishLevel(won);
+  if (won) {
+    setTimeout(() => startCoinRain(20 + (game.score > (LEVELS.find(l=>l.id===game.levelId)||{}).gold ? 25 : 0)), 400);
+    setTimeout(() => {
+      checkAchievements();
+      const lvl = LEVELS.find(l => l.id === game.levelId);
+      if (lvl) {
+        const w = WORLDS.find(x => game.levelId === x.range[1]);
+        if (w) setTimeout(() => checkWorldComplete(w.id), 1500);
+      }
+    }, 600);
+  }
+  if (game.dailyMode) {
+    const today = ymd();
+    state.dailyBest[today] = Math.max(state.dailyBest[today]|0, game.score|0);
+    state.dailyDoneYMD = today;
+    saveState();
+  }
+};
+
+// patch startLevel signature to accept options { pre, daily, seed }
+const _origStartLevel = startLevel;
+startLevel = function(id, opts) {
+  opts = opts || {};
+  if (!opts.daily) {
+    rolloverLivesIfNeeded();
+    if (state.lives <= 0) {
+      toast(t('out_of_lives_t'));
+      openOutOfLivesModal();
+      return;
+    }
+    // consume a life on start (refunded if quit before play; simple model — consume on start, restore on win)
+  }
+  _origStartLevel(id);
+  if (opts.daily && opts.seed) game.rng = mulberry32(opts.seed);
+  game.dailyMode = !!opts.daily;
+  if (opts.pre) applyPreBoosters(opts.pre);
+  // hide map FAB
+  document.getElementById('play-fab-wrap').style.display = 'none';
+  // mascot hint
+  if (mascot.el && state.totalGames < 3) {
+    mascotSay(t('ftue1_b'));
+  }
+  renderHUD();
+};
+
+// patch tryPlayCard to track total cards played + chain trail
+const _origTryPlayCard = tryPlayCard;
+tryPlayCard = function(cardId) {
+  const before = (game.cards.find(c => c.id === cardId) || {});
+  const wasCleared = before.cleared;
+  _origTryPlayCard(cardId);
+  const after = (game.cards.find(c => c.id === cardId) || {});
+  if (!wasCleared && after.cleared && !game.armedBooster) {
+    spawnChainTrail(after);
+    // mascot encouragement
+    if (game.chain === 5 && mascot.el) mascotSay('🔥 5-chain!');
+    if (game.chain === 10 && mascot.el) mascotSay('💥 INCREDIBLE!');
+  }
+};
+
+// Out-of-lives modal
+function openOutOfLivesModal() {
+  const ms = state.livesRefillAt - Date.now();
+  const mTxt = ms > 0 ? formatLivesTimer() : '—';
+  const html =
+    '<button class="x" onclick="closeModal()">✕</button>' +
+    '<h3>❤️ ' + t('out_of_lives_t') + '</h3>' +
+    '<p>' + t('out_of_lives_s') + '</p>' +
+    '<p style="font-size:11px;color:var(--ink-soft)">' + t('next_life_in', { m: mTxt }) + '</p>' +
+    '<div class="cta-row">' +
+      '<button class="cta secondary" id="cta-wait">' + t('wait_for_life') + '</button>' +
+      '<button class="cta" id="cta-buy">⭐ ' + t('refill_lives', { n: LIVES_REFILL_COST }) + '</button>' +
+    '</div>';
+  openModal(html, () => {
+    document.getElementById('cta-wait').addEventListener('click', closeModal);
+    document.getElementById('cta-buy').addEventListener('click', () => { closeModal(); purchase('revive'); /* fallback */ });
+  });
+}
+
+// Patch renderHUD to include lives pill
+const _origRenderHUD = renderHUD;
+renderHUD = function() {
+  _origRenderHUD();
+  rolloverLivesIfNeeded();
+  const ln = document.getElementById('hud-lives-n'); if (ln) ln.textContent = state.lives | 0;
+  const tm = document.getElementById('hud-lives-timer'); if (tm) tm.textContent = state.lives < LIVES_MAX ? formatLivesTimer() : '';
+};
+
+// Replace renderMap with S-curve, single-world-at-a-time, world-chip switcher
+renderMap = function() {
+  const root = document.getElementById('map-scroller');
+  if (!root) return;
+  root.innerHTML = '';
+  document.getElementById('map-title').textContent = t('quest_map');
+  document.getElementById('map-sub').textContent = t('three_peaks_sub');
+
+  // Active world: follow player's progress unless they switched explicitly.
+  if (!state.activeWorld) {
+    for (const w of WORLDS) {
+      if (state.maxLevelUnlocked >= w.range[0] && state.maxLevelUnlocked <= w.range[1]) { state.activeWorld = w.id; break; }
+    }
+    if (!state.activeWorld) state.activeWorld = 1;
+  }
+
+  // Daily challenge pill
+  const dp = document.createElement('div'); dp.className = 'daily-pill';
+  const dailyDone = state.dailyDoneYMD === ymd();
+  dp.innerHTML = '<div><h4>🗓 ' + t('daily_t') + '</h4><p>' + t('daily_s') + '</p></div>' +
+    '<button>' + (dailyDone ? t('daily_done') : t('daily_play')) + '</button>';
+  dp.querySelector('button').addEventListener('click', () => { if (!dailyDone) openDailyChallenge(); });
+  root.appendChild(dp);
+
+  // World chips switcher row
+  const chips = document.createElement('div'); chips.className = 'world-chips';
+  WORLDS.forEach((world, wi) => {
+    const wEarned = WORLDS_starsEarned(world);
+    const wTotal = (world.range[1] - world.range[0] + 1) * 3;
+    const unlocked = world.id === 1 || (state.maxLevelUnlocked >= world.range[0] - 2);
+    const chip = document.createElement('button');
+    chip.className = 'world-chip' + (state.activeWorld === world.id ? ' on' : '') + (!unlocked ? ' locked' : '');
+    chip.innerHTML = '<span class="wic">' + (unlocked ? world.icon : '🔒') + '</span><span>' + world.id + '</span><span class="ws">' + wEarned + '/' + wTotal + '</span>';
+    if (unlocked) chip.addEventListener('click', () => { state.activeWorld = world.id; saveState(); renderMap(); });
+    chips.appendChild(chip);
+  });
+  root.appendChild(chips);
+
+  // Active world band
+  const world = WORLDS.find(w => w.id === state.activeWorld) || WORLDS[0];
+  const wEarned = WORLDS_starsEarned(world);
+  const wTotal = (world.range[1] - world.range[0] + 1) * 3;
+  const claimed = !!state.worldsClaimed[world.id];
+  const unlocked = world.id === 1 || (state.maxLevelUnlocked >= world.range[0]);
+  const band = document.createElement('div');
+  band.className = 'world-band' + (unlocked ? '' : ' locked');
+  band.style.background = 'linear-gradient(135deg, ' + world.sky[0] + ' 0%, ' + world.sky[1] + ' 100%)';
+  band.innerHTML =
+    '<div class="wb-icon">' + world.icon + '</div>' +
+    '<div class="wb-text"><h3>' + t(['','world1_t','world2_t','world3_t','world4_t','world5_t'][world.id]) + '</h3><p>' + t(['','world1_s','world2_s','world3_s','world4_s','world5_s'][world.id]) + '</p></div>' +
+    '<div class="wb-stars">⭐ ' + wEarned + '/' + wTotal + '</div>';
+  root.appendChild(band);
+
+  if (!unlocked) {
+    const lm = document.createElement('div'); lm.className = 'world-meta';
+    lm.innerHTML = '<strong>🔒 ' + t('locked') + '</strong><br/>' + t('unlock_at_stars', { n: world.range[0] - 1 });
+    root.appendChild(lm);
+    return;
+  }
+
+  // S-curve path
+  const path = document.createElement('div'); path.className = 's-path';
+  const N = world.range[1] - world.range[0] + 1;
+  const SPACING = 110, PAD_TOP = 30;
+  const AMP_VW = 0.28; // amplitude as fraction of path width
+  const totalH = N * SPACING + (allLevelsBeaten(world) ? 110 : 0) + 70;
+  path.style.height = totalH + 'px';
+  // SVG dotted connector line
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.classList.add('s-path-svg');
+  svg.setAttribute('viewBox', '0 0 100 ' + totalH);
+  svg.setAttribute('preserveAspectRatio', 'none');
+  let d = '';
+  for (let i = 0; i < N; i++) {
+    const y = PAD_TOP + i * SPACING;
+    const x = 50 + Math.sin(i * 0.78) * AMP_VW * 100;
+    d += (i === 0 ? 'M ' : 'L ') + x + ' ' + y + ' ';
+  }
+  if (allLevelsBeaten(world)) {
+    const y = PAD_TOP + N * SPACING + 30;
+    const x = 50 + Math.sin(N * 0.78) * AMP_VW * 100;
+    d += 'L ' + x + ' ' + y + ' ';
+  }
+  const pathEl = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  pathEl.setAttribute('d', d);
+  pathEl.setAttribute('fill', 'none');
+  pathEl.setAttribute('stroke', 'rgba(255,255,255,0.22)');
+  pathEl.setAttribute('stroke-width', '2');
+  pathEl.setAttribute('stroke-dasharray', '6 6');
+  pathEl.setAttribute('vector-effect', 'non-scaling-stroke');
+  svg.appendChild(pathEl);
+  path.appendChild(svg);
+
+  // Level nodes
+  for (let i = 0; i < N; i++) {
+    const lid = world.range[0] + i;
+    const lvl = LEVELS.find(L => L.id === lid);
+    if (!lvl) continue;
+    const stars = state.starsPerLevel[lvl.id] || 0;
+    const lvlUnlocked = lvl.id <= state.maxLevelUnlocked;
+    const isCurrent = lvlUnlocked && lvl.id === state.maxLevelUnlocked && stars < 3;
+    const node = document.createElement('button');
+    node.className = 's-node' + (lvlUnlocked ? '' : ' locked') + (isCurrent ? ' current' : '') + (lvl.boss ? ' boss' : '');
+    const y = PAD_TOP + i * SPACING;
+    const xPct = 50 + Math.sin(i * 0.78) * AMP_VW * 100;
+    const halfW = lvl.boss ? 48 : 42;
+    node.style.top = (y - halfW) + 'px';
+    node.style.left = 'calc(' + xPct + '% - ' + halfW + 'px)';
+    if (lvlUnlocked) {
+      node.innerHTML = '<div class="nnum">' + lvl.id + (lvl.boss ? '👑' : '') + '</div><div class="nstars">' + ('★'.repeat(stars) + '☆'.repeat(3 - stars)) + '</div>';
+      node.addEventListener('click', () => {
+        state.level = lvl.id; saveState();
+        openPreLevelModal(lvl.id);
+      });
+    } else {
+      node.innerHTML = '<div class="lock">🔒</div>';
+    }
+    path.appendChild(node);
+  }
+  // World chest at the bottom of the S-path
+  if (allLevelsBeaten(world)) {
+    const chest = document.createElement('button');
+    chest.className = 's-chest' + (claimed ? ' locked' : '');
+    const y = PAD_TOP + N * SPACING + 30;
+    const xPct = 50 + Math.sin(N * 0.78) * AMP_VW * 100;
+    chest.style.top = (y - 48) + 'px';
+    chest.style.left = 'calc(' + xPct + '% - 48px)';
+    chest.innerHTML = '<div class="ci">' + (claimed ? '✓' : '🎁') + '</div><div>' + (claimed ? '' : t('world_open_chest')) + '</div>';
+    if (!claimed) chest.addEventListener('click', () => openWorldChestModal(world));
+    path.appendChild(chest);
+  }
+  root.appendChild(path);
+
+  // bottom padding for tab bar + fab
+  const more = document.createElement('div');
+  more.style.cssText='text-align:center;padding:18px 12px 120px;color:var(--ink-dim);font-size:12px;';
+  more.textContent = (world.id === WORLDS.length) ? t('coming_soon') : '';
+  root.appendChild(more);
+
+  // Auto-scroll to current level on first render
+  setTimeout(() => {
+    const cur = root.querySelector('.s-node.current') || root.querySelector('.s-node:not(.locked):last-child');
+    if (cur && cur.scrollIntoView) cur.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  }, 50);
+};
+function WORLDS_starsEarned(world) {
+  let s = 0;
+  for (let id = world.range[0]; id <= world.range[1]; id++) s += (state.starsPerLevel[id]|0);
+  return s;
+}
+function allLevelsBeaten(world) {
+  for (let id = world.range[0]; id <= world.range[1]; id++) {
+    if ((state.starsPerLevel[id]|0) < 1) return false;
+  }
+  return true;
+}
+
+// Patch renderEarn to add postcards, achievements, stats
+const _origRenderEarn = renderEarn;
+renderEarn = function() {
+  _origRenderEarn();
+  const root = document.getElementById('earn-scroll');
+  if (!root) return;
+
+  // POSTCARDS
+  const pcHead = document.createElement('div'); pcHead.className = 'shop-section-title'; pcHead.textContent = '📸 ' + t('postcards_title');
+  root.appendChild(pcHead);
+  const pcGrid = document.createElement('div'); pcGrid.className = 'postcard-grid';
+  POSTCARDS.forEach(pc => {
+    const ps = ensurePostcard(pc.id);
+    const cell = document.createElement('div');
+    cell.className = 'postcard-cell' + (ps.complete ? ' complete' : ps.pieces === 0 ? ' locked' : '');
+    cell.innerHTML =
+      '<canvas width="200" height="120"></canvas>' +
+      '<div class="pc-title">' + t(pc.tKey) + '</div>' +
+      '<div class="pc-progress">' + t('postcards_progress', { n: ps.pieces }) +
+        '<span class="bar"><span class="fill" style="width:' + clamp(ps.pieces / pc.pieces * 100, 0, 100) + '%"></span></span>' +
+      '</div>';
+    const cv = cell.querySelector('canvas');
+    drawPostcardArt(cv.getContext('2d'), cv.width, cv.height, pc.key, ps.complete);
+    pcGrid.appendChild(cell);
+  });
+  root.appendChild(pcGrid);
+
+  // ACHIEVEMENTS
+  const achHead = document.createElement('div'); achHead.className = 'shop-section-title'; achHead.textContent = '🏆 ' + t('achievements_title');
+  root.appendChild(achHead);
+  const achGrid = document.createElement('div'); achGrid.className = 'ach-grid';
+  ACHIEVEMENTS.forEach(ach => {
+    const cur = state.achievements[ach.id] || {};
+    const cell = document.createElement('div');
+    cell.className = 'ach-cell' + (cur.claimed ? ' claimed' : cur.unlocked ? ' unlocked' : '');
+    cell.innerHTML = '<div class="ic">' + ach.icon + '</div><div class="nm">' + t(ach.tKey) + '</div><div class="rw">🪙 ' + ach.reward + '</div>';
+    if (cur.unlocked && !cur.claimed) cell.addEventListener('click', () => claimAchievement(ach.id));
+    achGrid.appendChild(cell);
+  });
+  root.appendChild(achGrid);
+
+  // STATS
+  renderStatsPanel(root);
+};
+
+// Patch checkWin to award score popups + revealCardsBeneath now triggers fireworks on peak clear
+const _origRevealCardsBeneath = revealCardsBeneath;
+revealCardsBeneath = function() {
+  const before = game.cards.filter(c => !c.cleared && !c.faceDown).length;
+  _origRevealCardsBeneath();
+  // any layer-0 card just cleared = peak clear fireworks
+  // simple heuristic: if a card at layer 0 was just cleared we spawn extra particles at its position
+  // (we keep it simple — celebrate on each peak)
+  for (const c of game.cards) {
+    if (c.cleared && c.layer === 0 && !c._peakCelebrated) {
+      c._peakCelebrated = true;
+      spawnParticles(c.x, c.y, 30, '#ffd166');
+      spawnParticles(c.x, c.y, 30, '#ef476f');
+      spawnScorePopup(c.x, c.y - 0.03, 'PEAK!');
+      haptic('heavy');
+    }
+  }
+};
+
+
+function applyLang() {
+  document.documentElement.lang = state.settings.lang || 'en';
+  document.documentElement.dir = RTL_LANGS.includes(state.settings.lang) ? 'rtl' : 'ltr';
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const k = el.dataset.i18n; const v = t(k); if (v) el.textContent = v;
+  });
+  document.getElementById('map-title').textContent = t('quest_map');
+  document.getElementById('map-sub').textContent = t('three_peaks_sub');
+}
+function switchTab(name) {
+  document.querySelectorAll('.tab-view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  const v = document.getElementById('view-' + name);
+  const b = document.querySelector('.tab-btn[data-tab="' + name + '"]');
+  if (v) v.classList.add('active');
+  if (b) b.classList.add('active');
+  state.activeTab = name; saveState();
+  if (name === 'shop') renderShop();
+  if (name === 'earn') renderEarn();
+  if (name === 'play') { showMapScreen(); renderMap(); }
+}
+
+function toast(text) {
+  const root = document.getElementById('toast-root');
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.textContent = text;
+  root.appendChild(t);
+  setTimeout(() => t.remove(), 2800);
+}
+
+function wireUI() {
+  document.querySelectorAll('.tab-btn').forEach(b => b.addEventListener('click', () => switchTab(b.dataset.tab)));
+  document.getElementById('btn-settings').addEventListener('click', openSettingsModal);
+  document.getElementById('btn-leave-play').addEventListener('click', openConfirmLeaveModal);
+  document.getElementById('play-fab').addEventListener('click', () => openPreLevelModal(state.level || state.maxLevelUnlocked));
+  document.querySelector('.pill.coin .add').addEventListener('click', (e) => { e.stopPropagation(); switchTab('shop'); });
+  document.getElementById('hud-stars').addEventListener('click', () => switchTab('earn'));
+  document.getElementById('hud-coins').addEventListener('click', () => switchTab('shop'));
+  document.getElementById('hud-lives').addEventListener('click', () => {
+    if (state.lives < LIVES_MAX) openOutOfLivesModal();
+  });
+}
+
+async function boot() {
+  initTelegram();
+  initMascot();
+  initCoinRain();
+  if (state.splashSeen) {
+    const sp = document.getElementById('splash');
+    if (sp) { sp.classList.add('gone'); sp.style.display = 'none'; }
+  } else {
+    drawSplash();
+  }
+  rolloverLivesIfNeeded();
+  await fetchFlags();
+  applyLang();
+  wireUI();
+  layoutCanvas();
+  renderHUD();
+  renderMap();
+  switchTab(state.activeTab || 'play');
+  pollPurchases();
+  pushHeartbeat();
+  setInterval(pushHeartbeat, 60000);
+  setInterval(pollPurchases, 45000);
+  setInterval(() => { rolloverLivesIfNeeded(); renderHUD(); }, 30000);
+  // splash dismiss
+  document.getElementById('splash').addEventListener('click', () => {
+    dismissSplash();
+    if (!state.welcomed || !state.ftueDone) {
+      state.welcomed = true; saveState();
+      setTimeout(startFTUE, 350);
+    }
+  });
+  // first life lock check
+  checkAchievements();
+  mp('app_open', { lang: state.settings.lang, version: VERSION, level: state.maxLevelUnlocked });
+  flushMP();
+  // i18n texts for static elements
+  const sub = document.getElementById('splash-sub');
+  if (sub) sub.textContent = t('splash_tap');
+}
+
+boot();
+</script>
+</body>
+</html>
