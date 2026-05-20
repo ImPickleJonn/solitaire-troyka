@@ -17,10 +17,10 @@ services:
       - key: DATA_DIR
         value: /data
       - key: PUBLIC_DOMAIN
-        fromService:
-          name: solitaire-troyka
-          type: web
-          property: host
+        # Render's fromService.host returns just the service name (e.g.
+        # "solitaire-troyka") not the full hostname, so the /start play
+        # button URL would be broken. Hard-code the full domain instead.
+        value: solitaire-troyka.onrender.com
       - key: BOT_TOKEN
         sync: false
       - key: MIXPANEL_TOKEN
