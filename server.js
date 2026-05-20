@@ -12,6 +12,30 @@ const fetch = (...args) => import('node-fetch').then(({default: f}) => f(...args
 const PORT = process.env.PORT || 3000;
 const BOT_TOKEN = process.env.BOT_TOKEN || '';
 const PUBLIC_DOMAIN = process.env.PUBLIC_DOMAIN || '';
+
+// Purchase notification → shared pickle-notif-bot. No-op unless both env vars
+// are set, so this is safe to deploy before the notif bot exists.
+const NOTIF_BOT_URL = process.env.NOTIF_BOT_URL || '';
+const NOTIF_SECRET  = process.env.NOTIF_SECRET || '';
+const NOTIF_GAME_ID = 'solitaire_quest';
+function notifyPurchase(info) {
+  if (!NOTIF_BOT_URL || !NOTIF_SECRET) return;
+  try {
+    fetch(NOTIF_BOT_URL.replace(/\/+$/, '') + '/api/purchase', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-notif-key': NOTIF_SECRET },
+      body: JSON.stringify({
+        game: NOTIF_GAME_ID,
+        sku: info.sku,
+        stars: info.stars,
+        userId: info.userId,
+        username: info.username,
+        ts: Date.now(),
+      }),
+    }).catch(() => {});
+  } catch (_e) {}
+}
+
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
 const MIXPANEL_TOKEN = process.env.MIXPANEL_TOKEN || '';
 const ADMIN_IDS = (process.env.TELEGRAM_ADMIN_IDS || '23040617').split(',').map(s => s.trim()).filter(Boolean);
@@ -373,6 +397,12 @@ app.post('/api/tg-webhook', async (req, res) => {
         await tgCall('sendMessage', {
           chat_id: fromId,
           text: `Thanks! Your ${skuTitle(skuKey)} will arrive in-game on next refresh.`
+        });
+        notifyPurchase({
+          sku: skuKey,
+          stars: sp.total_amount || sku.price || 0,
+          userId: fromId,
+          username: update.message.from && update.message.from.username,
         });
       }
     }
