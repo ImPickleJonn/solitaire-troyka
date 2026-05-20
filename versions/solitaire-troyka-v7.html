@@ -714,176 +714,6 @@ html[dir="rtl"] .map-node[data-side="R"]{transform:translateX(-72px)}
 }
 .mode-tab.on{background:linear-gradient(135deg,#06d6a0,#118ab2);color:#fff;border-color:transparent}
 
-/* ============================================
-   [Z] Massive UI overhaul (v0.3 — Disney-aligned)
-   ============================================ */
-
-/* In-play mode: hide tab bar + non-essential HUD pills + brand text */
-body.in-play .bottom-tabs{display:none}
-body.in-play #app{padding-bottom:var(--safe-bottom)}
-body.in-play .pill.streak,
-body.in-play .pill.lives,
-body.in-play .brand{display:none}
-body.in-play .topbar{padding:6px 8px 4px}
-body.in-play .pill.star,
-body.in-play .pill.coin{padding:6px 12px;font-size:13px}
-body.in-play .pill.coin .ic,body.in-play .pill.star .ic{font-size:15px}
-body.in-play .pill.coin .add{display:none}
-
-/* Persistent tutorial tip (Disney's L1 pattern — text lives in-game) */
-.play-tip{
-  position:absolute;left:50%;transform:translateX(-50%);
-  top:calc(var(--hud-h) + 4px);
-  background:rgba(20,8,50,.78);
-  border:1px solid rgba(255,255,255,.12);
-  backdrop-filter:blur(6px);
-  color:#fff;
-  padding:9px 18px;border-radius:16px;
-  font-size:13px;font-weight:700;text-align:center;
-  max-width:88%;line-height:1.3;
-  pointer-events:none;z-index:6;
-  box-shadow:0 6px 18px rgba(0,0,0,.4);
-  opacity:0;transform:translateX(-50%) translateY(-4px);
-  transition:opacity .25s ease, transform .25s ease;
-}
-.play-tip.show{opacity:1;transform:translateX(-50%) translateY(0)}
-.play-tip em{color:#06d6a0;font-style:normal;font-weight:900}
-.play-tip b{color:#ef476f;font-weight:900}
-
-/* Reposition mascot to bottom-left during play (Disney pattern) */
-body.in-play .mascot-bubble{
-  left:6px;
-  top:auto;
-  bottom:calc(var(--bar-h) + var(--safe-bottom) + 8px);
-  flex-direction:column-reverse;
-  align-items:flex-start;
-}
-body.in-play .mascot-text{
-  margin:0 0 4px 8px;
-  position:relative;
-}
-body.in-play .mascot-text::after{
-  content:"";position:absolute;left:14px;bottom:-6px;
-  border:6px solid transparent;
-  border-top-color:rgba(255,255,255,.92);
-  border-right-color:transparent;
-}
-
-/* ============================================
-   YOU DID IT! theatrical win overlay
-   ============================================ */
-#win-overlay{
-  position:fixed;inset:0;z-index:90;display:none;
-  align-items:center;justify-content:center;
-  pointer-events:auto;
-}
-#win-overlay.show{display:flex}
-#win-overlay .win-bg{
-  position:absolute;inset:0;
-  background:radial-gradient(80% 60% at 50% 40%, rgba(255,209,102,.22) 0%, rgba(20,8,50,.92) 60%, rgba(8,3,22,.96) 100%);
-  animation:winBgFade .4s ease both;
-}
-@keyframes winBgFade{from{opacity:0}to{opacity:1}}
-
-/* Theater curtains */
-#win-overlay .curtain{
-  position:absolute;top:0;bottom:0;width:30%;
-  background:linear-gradient(90deg,
-    #6b0a1a 0%, #a51d30 20%, #8a1426 40%, #c92f4d 60%, #8a1426 80%, #6b0a1a 100%);
-  background-size:60px 100%;
-  background-image:repeating-linear-gradient(90deg,
-    #6b0a1a 0px, #c92f4d 20px, #8a1426 35px, #c92f4d 50px, #6b0a1a 60px);
-  box-shadow:inset 0 0 60px rgba(0,0,0,.5);
-}
-#win-overlay .curtain.l{left:0;border-right:6px solid #ffd166;animation:curtainL .55s cubic-bezier(.18,1.05,.45,1) both}
-#win-overlay .curtain.r{right:0;border-left:6px solid #ffd166;animation:curtainR .55s cubic-bezier(.18,1.05,.45,1) both}
-@keyframes curtainL{from{transform:translateX(-100%)}to{transform:translateX(0)}}
-@keyframes curtainR{from{transform:translateX(100%)}to{transform:translateX(0)}}
-#win-overlay .curtain-tassel{
-  position:absolute;top:30%;width:36px;height:80px;
-  background:radial-gradient(40% 50% at 50% 50%, #ffd166 0%, #b97a1c 100%);
-  border-radius:50% 50% 40% 40%;
-}
-#win-overlay .curtain.l .curtain-tassel{right:-6px}
-#win-overlay .curtain.r .curtain-tassel{left:-6px}
-
-/* "YOU DID IT!" title */
-.win-title{
-  position:relative;z-index:5;
-  font-size:46px;font-weight:900;letter-spacing:1.5px;
-  text-align:center;
-  background:linear-gradient(180deg, #fff7d9 0%, #ffd166 60%, #ef476f 100%);
-  -webkit-background-clip:text;background-clip:text;color:transparent;
-  text-shadow:0 4px 16px rgba(0,0,0,.5);
-  margin-bottom:8px;
-  animation:winTitle .5s cubic-bezier(.18,1.6,.45,.95) .35s both;
-  font-family:'Inter',-apple-system,system-ui,sans-serif;
-}
-@keyframes winTitle{from{transform:scale(.3) rotate(-8deg);opacity:0}to{transform:scale(1) rotate(0);opacity:1}}
-
-/* Giant star with rays */
-.win-star-wrap{
-  position:relative;z-index:5;
-  width:200px;height:200px;display:grid;place-items:center;
-  animation:winStarPop .55s cubic-bezier(.18,1.6,.45,.95) .5s both;
-}
-@keyframes winStarPop{from{transform:scale(.1) rotate(-90deg);opacity:0}to{transform:scale(1) rotate(0);opacity:1}}
-.win-star{
-  font-size:120px;line-height:1;
-  filter:drop-shadow(0 0 24px rgba(255,209,102,.9)) drop-shadow(0 0 60px rgba(255,209,102,.5));
-  animation:winStarSpin 4s linear infinite;
-}
-@keyframes winStarSpin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
-.win-rays{
-  position:absolute;inset:-30px;
-  background:conic-gradient(from 0deg, rgba(255,209,102,.6), transparent 8%, rgba(255,209,102,.4), transparent 16%, rgba(255,209,102,.5), transparent 24%, rgba(255,209,102,.3), transparent 32%, rgba(255,209,102,.6), transparent 40%, rgba(255,209,102,.4), transparent 48%, rgba(255,209,102,.5), transparent 56%, rgba(255,209,102,.3), transparent 64%, rgba(255,209,102,.6), transparent 72%, rgba(255,209,102,.4), transparent 80%, rgba(255,209,102,.5), transparent 88%, rgba(255,209,102,.3), transparent 96%);
-  border-radius:50%;
-  animation:winRays 6s linear infinite;
-  z-index:-1;
-}
-@keyframes winRays{from{transform:rotate(0)}to{transform:rotate(-360deg)}}
-
-/* Coin reward count-up */
-.win-reward{
-  position:relative;z-index:5;
-  margin-top:8px;
-  background:rgba(255,209,102,.18);
-  border:2px solid rgba(255,209,102,.5);
-  border-radius:18px;
-  padding:8px 22px;
-  font-size:28px;font-weight:900;color:#ffd166;
-  text-shadow:0 3px 12px rgba(0,0,0,.5);
-  animation:winReward .35s ease .8s both;
-}
-@keyframes winReward{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
-
-/* Star ratings under reward */
-.win-stars{display:flex;gap:14px;margin-top:14px;justify-content:center;position:relative;z-index:5}
-.win-stars .ws{
-  font-size:42px;filter:grayscale(1) brightness(.5);opacity:.4;transform:scale(.7);
-  transition:filter .3s, opacity .3s, transform .3s cubic-bezier(.18,1.6,.45,.95);
-}
-.win-stars .ws.lit{filter:drop-shadow(0 0 12px rgba(255,209,102,.9));opacity:1;transform:scale(1);color:#ffd166}
-
-/* Tap-to-continue hint */
-.win-cta-row{position:relative;z-index:5;margin-top:24px;display:flex;gap:10px}
-.win-cta{
-  background:linear-gradient(180deg,#06d6a0,#0a9a72);
-  color:#fff;
-  border-radius:18px;padding:14px 26px;
-  font-weight:900;font-size:15px;letter-spacing:.6px;
-  box-shadow:0 6px 0 #057a55, 0 12px 24px rgba(0,0,0,.4);
-  animation:winReward .35s ease 1.1s both;
-}
-.win-cta:active{transform:translateY(3px);box-shadow:0 3px 0 #057a55, 0 6px 12px rgba(0,0,0,.4)}
-.win-cta.secondary{background:rgba(255,255,255,.15);box-shadow:0 4px 0 rgba(0,0,0,.3), 0 8px 18px rgba(0,0,0,.4);color:#fff}
-.win-cta.secondary:active{transform:translateY(2px)}
-
-#win-overlay .win-inner{
-  position:relative;z-index:5;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-}
-
 /* ---------- chain ribbon (top during gameplay) ---------- */
 .chain-ribbon{
   position:absolute;left:50%;top:8px;transform:translateX(-50%);
@@ -949,7 +779,6 @@ body.in-play .mascot-text::after{
           <button class="icon-btn" id="btn-leave-play" title="Leave">✕</button>
         </div>
         <div class="chain-ribbon" id="chain-ribbon"></div>
-        <div class="play-tip" id="play-tip"></div>
         <div class="mascot-bubble" id="mascot-bubble">
           <canvas class="mascot-canvas" id="mascot-canvas" width="108" height="108"></canvas>
           <div class="mascot-text" id="mascot-text">Tap a card ±1 from the waste!</div>
@@ -984,30 +813,6 @@ body.in-play .mascot-text::after{
   <div id="modal-root"></div>
   <div id="toast-root"></div>
   <div class="ach-popup" id="ach-popup"><div class="ic">🏆</div><div><div class="t">ACHIEVEMENT</div><div class="nm">First Victory</div></div></div>
-
-  <!-- Theatrical "YOU DID IT!" win overlay -->
-  <div id="win-overlay">
-    <div class="win-bg"></div>
-    <div class="curtain l"><div class="curtain-tassel"></div></div>
-    <div class="curtain r"><div class="curtain-tassel"></div></div>
-    <div class="win-inner">
-      <div class="win-title" id="win-title">YOU DID IT!</div>
-      <div class="win-star-wrap">
-        <div class="win-rays"></div>
-        <div class="win-star">★</div>
-      </div>
-      <div class="win-reward" id="win-reward">+0 🪙</div>
-      <div class="win-stars">
-        <div class="ws" id="ws1">★</div>
-        <div class="ws" id="ws2">★</div>
-        <div class="ws" id="ws3">★</div>
-      </div>
-      <div class="win-cta-row">
-        <button class="win-cta secondary" id="win-map">🗺 Map</button>
-        <button class="win-cta" id="win-next">Next →</button>
-      </div>
-    </div>
-  </div>
 
   <div id="splash">
     <canvas id="splash-canvas" width="600" height="400"></canvas>
@@ -1421,17 +1226,6 @@ function rand(a,b){ return a + Math.random()*(b-a); }
    The render layer maps these to canvas pixels with safe padding.
 */
 const LAYOUTS = {
-  // Disney L1 shape: 7 cards face-up in a single horizontal row. Unloseable, max readable.
-  singleRow(opts) {
-    const out = [];
-    let id = 0;
-    const N = 7;
-    for (let i = 0; i < N; i++) {
-      const x = 0.12 + i * (0.76 / (N - 1));
-      out.push({ id: id++, x, y: 0.26, layer: 0, faceDown: false });
-    }
-    return out;
-  },
   // Single small peak: 1+2+3+4 = 10 cards. Bottom row face-up. Genuine "you can't lose this" Level-1 shape.
   easyPeak(opts) {
     const out = [];
@@ -1752,10 +1546,9 @@ const WORLDS = [
 const LEVELS = [
   // ============ WORLD 1 — Royal Garden ============
   // L1-3 are deliberately "you can't lose this": tiny tableau, fat stock, low par. Disney-Solitaire-style tutorial ramp.
-  // L1: single ROW of 7 cards (Disney's actual L1 shape — no peaks, max readable).
-  { id:1,  world:1, layout:'singleRow', stock:14, par:300,   gold:1000, perfect:2500,  intro:'basic',   mods:{} },
-  { id:2,  world:1, layout:'singleRow', stock:12, par:500,   gold:1500, perfect:3000,  mods:{} },
-  { id:3,  world:1, layout:'easyPeak',  stock:18, par:1200,  gold:2800, perfect:4500,  mods:{} },
+  { id:1,  world:1, layout:'easyPeak',  stock:20, par:500,   gold:1500, perfect:3000,  intro:'basic',   mods:{} },
+  { id:2,  world:1, layout:'easyPeak',  stock:18, par:800,   gold:2000, perfect:3500,  mods:{} },
+  { id:3,  world:1, layout:'easyTwin',  stock:22, par:1200,  gold:2800, perfect:4500,  mods:{} },
   { id:4,  world:1, layout:'easyTwin',  stock:20, par:1800,  gold:3500, perfect:5500,  intro:'lock',    mods:{ lockCount:1 } },
   { id:5,  world:1, layout:'pyramid',   stock:22, par:2400,  gold:4500, perfect:6500,  mods:{ lockCount:1 } },
   { id:6,  world:1, layout:'tripeak3',  stock:24, par:3000,  gold:5500,  perfect:8000,  mods:{ lockCount:1 } },
@@ -2072,9 +1865,7 @@ function tryPlayCard(cardId) {
   const base = 50;
   const multScore = base * COMBO_TIERS[tier].mult * (c.multValue || 1);
   game.score += multScore;
-  // Coin-flavored popup (Disney: "+8c"). Show small coin number derived from score.
-  const coinShown = Math.max(1, Math.floor(multScore / 10));
-  spawnScorePopup(c.x, c.y, '+' + coinShown + '🪙' + (c.multValue > 1 ? ' ×' + c.multValue : ''));
+  spawnScorePopup(c.x, c.y, '+' + multScore + (c.multValue > 1 ? ' x' + c.multValue : ''));
 
   if (c.type === 'treasure') {
     state.coins += 30;
@@ -2868,32 +2659,13 @@ function showPlayScreen() {
   document.getElementById('map-screen').style.display = 'none';
   document.getElementById('play-screen').classList.add('active');
   document.getElementById('play-fab-wrap').style.display = 'none';
-  document.body.classList.add('in-play');
-  updatePlayTip();
   setTimeout(layoutCanvas, 16);
 }
 function showMapScreen() {
   document.getElementById('map-screen').style.display = 'block';
   document.getElementById('play-screen').classList.remove('active');
   document.getElementById('play-fab-wrap').style.display = 'flex';
-  document.body.classList.remove('in-play');
-  const tip = document.getElementById('play-tip'); if (tip) tip.classList.remove('show');
   game.active = false;
-}
-function updatePlayTip() {
-  const tip = document.getElementById('play-tip');
-  if (!tip) return;
-  // Show persistent tutorial text on L1-L3 (Disney pattern).
-  if (game.levelId <= 3) {
-    const lang = state.settings.lang || 'en';
-    const isRu = lang === 'ru' || lang === 'uk';
-    tip.innerHTML = isRu
-      ? 'Касайся карты на <em>+1</em> или <b>−1</b> от карты в отбое'
-      : 'Tap a card one rank <em>higher</em> or <b>lower</b> than the card at the bottom';
-    tip.classList.add('show');
-  } else {
-    tip.classList.remove('show');
-  }
 }
 
 /* ============== [JS-15] SHOP TAB ============== */
@@ -3170,44 +2942,45 @@ function closeModal() {
   root.innerHTML = '';
 }
 function openLevelCompleteModal(stars) {
-  // Theatrical "YOU DID IT!" overlay — red curtains + giant star + coin count-up.
-  // Replaces the old modal-style level-complete with Disney's signature win screen.
   const def = LEVELS.find(l => l.id === game.levelId);
   const reward = 50 + stars * 30 + (state.battlePassUntil > Date.now() ? 30 : 0);
   const next = game.levelId + 1;
-  const overlay = document.getElementById('win-overlay');
-  if (!overlay) return;
-  // Reset star states
-  ['ws1','ws2','ws3'].forEach(id => document.getElementById(id).classList.remove('lit'));
-  document.getElementById('win-reward').textContent = '+0 🪙';
-  document.getElementById('win-title').textContent = stars === 3 ? 'PERFECT!' : (stars === 2 ? 'GREAT!' : 'YOU DID IT!');
-  // Show overlay
-  overlay.classList.add('show');
-  // Animate stars in one-at-a-time
-  for (let i = 0; i < stars; i++) {
-    setTimeout(() => {
-      const el = document.getElementById('ws' + (i+1));
-      if (el) el.classList.add('lit');
-      beepWin();
-      haptic('success');
-    }, 700 + i * 360);
-  }
-  // Count up the coin reward (after the star reveals start)
-  setTimeout(() => countUp(document.getElementById('win-reward'), 0, reward, 900, v => '+' + (v|0) + ' 🪙'), 850);
-  // Wire CTA buttons (rebind each time)
-  const mapBtn = document.getElementById('win-map');
-  const nextBtn = document.getElementById('win-next');
-  function closeWin() { overlay.classList.remove('show'); }
-  if (mapBtn) mapBtn.onclick = () => { closeWin(); showMapScreen(); renderMap(); };
-  if (nextBtn) {
-    if (next <= LEVELS.length) {
-      nextBtn.style.display = '';
-      nextBtn.textContent = (state.settings.lang === 'ru' ? 'Дальше' : 'Next') + ' →';
-      nextBtn.onclick = () => { closeWin(); openPreLevelModal(next); };
-    } else {
-      nextBtn.style.display = 'none';
+  const html =
+    '<button class="x" onclick="closeModal();showMapScreen();renderMap()">✕</button>' +
+    '<h3>' + t('lvl_complete') + '</h3>' +
+    '<p>' + t('level', { n: game.levelId }) + '</p>' +
+    '<div class="stars-display">' +
+      '<div class="st" id="cs1">★</div>' +
+      '<div class="st" id="cs2">★</div>' +
+      '<div class="st" id="cs3">★</div>' +
+    '</div>' +
+    '<div class="reward-row">' +
+      '<div class="reward-chip" id="rc-score">' + t('score') + ' 0</div>' +
+      '<div class="reward-chip" id="rc-coins">🪙 +0</div>' +
+    '</div>' +
+    '<div class="cta-row">' +
+      '<button class="cta secondary" id="cta-map">' + t('btn_map') + '</button>' +
+      (next <= LEVELS.length ? '<button class="cta" id="cta-next">' + t('btn_next') + ' →</button>' : '<button class="cta secondary" disabled>' + t('coming_soon') + '</button>') +
+    '</div>';
+  openModal(html, () => {
+    document.getElementById('cta-map').addEventListener('click', () => { closeModal(); showMapScreen(); renderMap(); });
+    const nxt = document.getElementById('cta-next');
+    if (nxt) nxt.addEventListener('click', () => { closeModal(); openPreLevelModal(next); });
+    // stars animate in one-at-a-time
+    const ids = ['cs1','cs2','cs3'];
+    for (let i = 0; i < stars; i++) {
+      setTimeout(() => {
+        const el = document.getElementById(ids[i]);
+        if (el) el.classList.add('lit');
+        beepWin();
+        haptic('success');
+      }, 350 + i * 380);
     }
-  }
+    // count-up score
+    countUp(document.getElementById('rc-score'), 0, game.score, 1100, v => t('score') + ' ' + (v|0));
+    // count-up coins after a beat
+    setTimeout(() => countUp(document.getElementById('rc-coins'), 0, reward, 800, v => '🪙 +' + (v|0)), 600);
+  });
   // intro chime, big payoff
   setTimeout(() => beepWin(), 200);
   haptic('success');
