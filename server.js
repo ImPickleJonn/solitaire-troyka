@@ -36,6 +36,27 @@ function notifyPurchase(info) {
   } catch (_e) {}
 }
 
+// Server-side app_init event for TG Data HQ retention + engagement. Called
+// from /api/heartbeat (userFromReq has already validated initData, so the
+// userId is Telegram-verified). TG Data HQ dedups to ~1/hour per
+// (userId|game|event).
+function reportAppInit(info) {
+  if (!NOTIF_BOT_URL || !NOTIF_SECRET) return;
+  try {
+    fetch(NOTIF_BOT_URL.replace(/\/+$/, '') + '/api/event', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-notif-key': NOTIF_SECRET },
+      body: JSON.stringify({
+        game: NOTIF_GAME_ID,
+        event: 'app_init',
+        userId: info.userId,
+        username: info.username,
+        ts: Date.now(),
+      }),
+    }).catch(() => {});
+  } catch (_e) {}
+}
+
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
 const MIXPANEL_TOKEN = process.env.MIXPANEL_TOKEN || '';
 const ADMIN_IDS = (process.env.TELEGRAM_ADMIN_IDS || '23040617').split(',').map(s => s.trim()).filter(Boolean);
@@ -228,6 +249,7 @@ app.post('/api/heartbeat', (req, res) => {
   const ctx = userFromReq(req);
   if (!ctx) return res.json({ ok: false, reason: 'no-init-data' });
   const { uid, u } = ctx;
+  reportAppInit({ userId: uid, username: u && u.username });
   const body = req.body || {};
   if (typeof body.lang === 'string') u.lang = body.lang.slice(0, 8);
   if (typeof body.streak === 'number') u.streak = body.streak | 0;
