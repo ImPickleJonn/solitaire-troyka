@@ -61,7 +61,7 @@ const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
 const MIXPANEL_TOKEN = process.env.MIXPANEL_TOKEN || '';
 const ADMIN_IDS = (process.env.TELEGRAM_ADMIN_IDS || '23040617').split(',').map(s => s.trim()).filter(Boolean);
 
-const VERSION = '0.2.0';
+const VERSION = '0.4.0';
 
 // ---------- persistence ----------
 try { fs.mkdirSync(DATA_DIR, { recursive: true }); } catch {}
