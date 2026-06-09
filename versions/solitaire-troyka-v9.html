@@ -6,9 +6,6 @@
 <meta name="theme-color" content="#1a0b2e"/>
 <title>Solitaire Troyka</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Lilita+One&display=swap" rel="stylesheet">
 <style>
 /* =========================================================
    Solitaire Troyka — single-file styles
@@ -24,8 +21,8 @@
   --ink-soft:rgba(255,255,255,.72);
   --ink-dim:rgba(255,255,255,.45);
   --card-face:#fdfaf3;
-  --card-back-a:#1e3a8a;
-  --card-back-b:#2da9e8;
+  --card-back-a:#5a2ca0;
+  --card-back-b:#2a0f5a;
   --tab-h:64px;
   --safe-top:0px;
   --safe-bottom:0px;
@@ -35,17 +32,6 @@
   --pill-bg-strong:rgba(255,255,255,.16);
   --shadow-1:0 4px 14px rgba(0,0,0,.35);
   --shadow-2:0 10px 30px rgba(0,0,0,.5);
-  /* Disney palette (v0.4 overhaul) */
-  --scene-warm-1:#6a3a1f;
-  --scene-warm-2:#c47a3a;
-  --scene-warm-3:#f1b87a;
-  --scene-warm-4:#d18b4a;
-  --vignette:rgba(20,8,50,.55);
-  --disney-navy:#1e3a8a;
-  --disney-red:#c92f4d;
-  --popup-green:#7CD86F;
-  --tut-red:#ff5a5a;
-  --tut-blue:#5ab8ff;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
 html,body{margin:0;padding:0;height:100%;overflow:hidden;background:var(--bg-0);color:var(--ink);font-family:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;-webkit-font-smoothing:antialiased;font-feature-settings:"tnum"}
@@ -908,213 +894,6 @@ body.in-play .mascot-text::after{
 .chain-ribbon.on{display:block;animation:chainPulse .25s ease}
 @keyframes chainPulse{from{transform:translateX(-50%) scale(.7)}to{transform:translateX(-50%) scale(1)}}
 
-/* ============================================================
-   [Z2] v0.4 — DISNEY-DEEP OVERHAUL (scene, mascot perch, fly-coin,
-   score-pop, tut-hand, balloon star, curtain wipe, postcard cine)
-   ============================================================ */
-
-/* Painted storybook scene background — sits BEHIND the game canvas */
-.scene-bg{position:absolute;inset:0;z-index:0;overflow:hidden;pointer-events:none}
-.scene-floor{
-  position:absolute;inset:0;
-  background:radial-gradient(120% 80% at 50% 60%,#f1b87a 0%,#d18b4a 38%,#a05a25 72%,#5a2a05 100%);
-}
-.scene-vignette{
-  position:absolute;inset:0;
-  background:radial-gradient(60% 50% at 50% 50%,transparent 30%,var(--vignette) 100%);
-  mix-blend-mode:multiply;
-}
-.scene-prop{position:absolute;pointer-events:none;filter:drop-shadow(0 8px 16px rgba(0,0,0,.25))}
-.scene-prop-leaf{top:0;left:0;width:130px;height:170px;transform:rotate(-12deg) translate(-25px,-30px);opacity:.85}
-.scene-prop-cushion{bottom:6%;right:-20px;width:140px;height:100px;opacity:.7}
-.scene-prop-books{top:8%;right:-10px;width:90px;height:80px;opacity:.7}
-/* Per-world scene tints (driven by body[data-world]) */
-body[data-world="2"] .scene-floor{background:radial-gradient(120% 80% at 50% 60%,#e0c878 0%,#a08440 38%,#6a4f1a 72%,#3a2810 100%)}
-body[data-world="3"] .scene-floor{background:radial-gradient(120% 80% at 50% 60%,#9bd8b8 0%,#3a9d6f 38%,#1a5a3a 72%,#0a2a1a 100%)}
-body[data-world="4"] .scene-floor{background:radial-gradient(120% 80% at 50% 60%,#c4d8ff 0%,#5a7ae0 38%,#2a3a8a 72%,#10183a 100%)}
-body[data-world="5"] .scene-floor{background:radial-gradient(120% 80% at 50% 60%,#e0c4ff 0%,#9a7add 38%,#5a3aa0 72%,#2a1a5a 100%)}
-
-/* Mascot perch — chest + canvas mascot on top, bottom-left */
-.mascot-perch{
-  position:absolute;
-  left:6px;
-  bottom:calc(var(--bar-h) + var(--safe-bottom) + 6px);
-  width:118px;height:130px;pointer-events:none;z-index:8;
-  display:none;
-}
-body.in-play .mascot-perch{display:block}
-.mascot-chest{position:absolute;bottom:0;left:0;width:118px;height:54px;filter:drop-shadow(0 6px 12px rgba(0,0,0,.4))}
-.mascot-perch .mascot-canvas{position:absolute;bottom:34px;left:11px;width:96px;height:96px;transition:transform .12s ease}
-.mascot-perch .mascot-canvas.react{animation:mascotHop .55s cubic-bezier(.34,1.56,.64,1)}
-@keyframes mascotHop{0%,100%{transform:translateY(0) scale(1)}40%{transform:translateY(-18px) scale(1.06,.94)}}
-/* speech bubble (still uses existing #mascot-bubble) — hide during in-play in favor of perch */
-body.in-play .mascot-bubble{display:none}
-
-/* Mickey-glove tutorial pointer */
-.tut-hand{
-  position:fixed;width:54px;height:72px;pointer-events:none;display:none;z-index:40;
-  will-change:transform;filter:drop-shadow(0 4px 8px rgba(0,0,0,.45));
-}
-.tut-hand.show{display:block;animation:handBob .65s ease-in-out infinite}
-@keyframes handBob{0%,100%{transform:translateY(0) rotate(-6deg)}50%{transform:translateY(10px) rotate(-6deg)}}
-
-/* DOM-based flying coin (arcs from card to HUD pill) */
-.fly-coin{
-  position:fixed;width:20px;height:20px;border-radius:50%;
-  background:radial-gradient(circle at 35% 35%,#fff7c2 0%,#ffd166 55%,#b97a1c 100%);
-  box-shadow:0 0 12px rgba(255,209,102,.7);
-  pointer-events:none;z-index:35;will-change:transform,opacity;
-}
-#hud-coins.land{animation:hudCoinLand .25s cubic-bezier(.34,1.56,.64,1)}
-@keyframes hudCoinLand{0%,100%{transform:scale(1)}50%{transform:scale(1.18)}}
-
-/* DOM-based score popup (replaces canvas text) */
-.score-pop{
-  position:fixed;transform:translate(-50%,-50%);
-  font:700 22px 'Fredoka','Inter',sans-serif;
-  color:var(--popup-green);
-  -webkit-text-stroke:1.2px #fff;
-  text-shadow:0 2px 0 rgba(0,0,0,.3),0 4px 6px rgba(0,0,0,.25);
-  pointer-events:none;opacity:0;z-index:36;
-  transition:transform .6s cubic-bezier(.18,1.45,.4,1),opacity .6s ease;
-}
-.score-pop.gold{color:#ffd166}
-.score-pop.go{transform:translate(-50%,-50%) translateY(-50px) scale(1.08);opacity:0}
-
-/* HUD-exit animations for the "win is coming" pre-roll */
-body.win-leaving .pill.coin{animation:hudExitTL .4s ease both}
-@keyframes hudExitTL{to{transform:translateY(-60px);opacity:0}}
-body.win-leaving .pill.star{animation:hudExitTR .4s ease .05s both}
-@keyframes hudExitTR{to{transform:translateY(-60px);opacity:0}}
-body.win-leaving #btn-settings{animation:hudExitTR .4s ease .08s both}
-body.win-leaving .mascot-perch{animation:hudExitBL .4s ease .1s both}
-@keyframes hudExitBL{to{transform:translateY(80px);opacity:0}}
-body.win-leaving #play-bar{animation:hudExitB .4s ease .15s both}
-@keyframes hudExitB{to{transform:translateY(140px);opacity:0}}
-body.win-leaving .play-tip{animation:hudExitT .3s ease both}
-@keyframes hudExitT{to{transform:translateX(-50%) translateY(-30px);opacity:0}}
-
-/* Tutorial-L1 HUD-naked state */
-body.tutorial-l1 .pill.coin,
-body.tutorial-l1 .pill.star,
-body.tutorial-l1 #btn-settings,
-body.tutorial-l1 .combo-dots{visibility:hidden;pointer-events:none}
-body.tutorial-l1 .pill.coin{animation:none}
-.pill.coin.reveal-hud{animation:hudReveal .5s cubic-bezier(.34,1.56,.64,1) both}
-@keyframes hudReveal{from{transform:translateY(-40px);opacity:0}to{transform:translateY(0);opacity:1}}
-
-/* Updated play-tip (tail + Disney red/blue + Fredoka) */
-.play-tip{font-family:'Fredoka','Inter',sans-serif;font-weight:600}
-.play-tip em{color:var(--tut-blue);font-style:normal;font-weight:700}
-.play-tip b{color:var(--tut-red);font-weight:700}
-.play-tip::after{
-  content:'';position:absolute;bottom:-8px;left:50%;
-  transform:translateX(-50%);width:0;height:0;
-  border-left:8px solid transparent;border-right:8px solid transparent;
-  border-top:8px solid rgba(20,8,50,.82);
-}
-
-/* Waste pile glow halo + ledge */
-.waste-pile{filter:drop-shadow(0 0 16px rgba(255,209,102,.22))}
-#play-bar::before{
-  content:'';position:absolute;left:50%;bottom:14px;transform:translateX(-50%);
-  width:220px;height:24px;
-  background:radial-gradient(ellipse,rgba(0,0,0,.42) 0%,transparent 70%);
-  pointer-events:none;z-index:0;
-}
-
-/* ====== WIN OVERLAY — balloon star upgrade ====== */
-#win-overlay .win-star{
-  width:170px;height:170px;
-  font-size:0;            /* hide unicode ★ fallback */
-  animation:winStarSquash .6s cubic-bezier(.34,1.56,.64,1) .5s both,
-            winStarBob 2.5s ease-in-out 1.5s infinite;
-}
-@keyframes winStarSquash{
-  0%{transform:scale(0)}
-  45%{transform:scale(1.2,.85)}
-  65%{transform:scale(.92,1.08)}
-  100%{transform:scale(1)}
-}
-@keyframes winStarBob{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-6px) rotate(3deg)}}
-#win-overlay .win-star svg{width:100%;height:100%;display:block;filter:drop-shadow(0 0 28px rgba(255,209,102,.85)) drop-shadow(0 0 70px rgba(255,209,102,.45))}
-
-/* Conic rays — 12 segments with mask for halo donut */
-#win-overlay .win-rays{
-  position:absolute;inset:-50px;
-  background:conic-gradient(from 0deg,
-    rgba(255,255,255,.85) 0deg, transparent 12deg,
-    rgba(255,255,255,.55) 30deg, transparent 42deg,
-    rgba(255,255,255,.85) 60deg, transparent 72deg,
-    rgba(255,255,255,.55) 90deg, transparent 102deg,
-    rgba(255,255,255,.85) 120deg, transparent 132deg,
-    rgba(255,255,255,.55) 150deg, transparent 162deg,
-    rgba(255,255,255,.85) 180deg, transparent 192deg,
-    rgba(255,255,255,.55) 210deg, transparent 222deg,
-    rgba(255,255,255,.85) 240deg, transparent 252deg,
-    rgba(255,255,255,.55) 270deg, transparent 282deg,
-    rgba(255,255,255,.85) 300deg, transparent 312deg,
-    rgba(255,255,255,.55) 330deg, transparent 342deg);
-  border-radius:50%;
-  -webkit-mask:radial-gradient(closest-side,transparent 30%,#000 55%,#000 100%);
-          mask:radial-gradient(closest-side,transparent 30%,#000 55%,#000 100%);
-  animation:winRays 9s linear infinite;
-  z-index:-1;
-}
-
-/* Balloon "YOU DID IT!" typography */
-.win-title{
-  font-family:'Fredoka','Lilita One','Inter',sans-serif;
-  font-weight:700;
-  letter-spacing:1.2px;
-  background:none;
-  -webkit-background-clip:initial;background-clip:initial;color:#ffd166;
-  text-shadow:
-    3px 3px 0 #5a2a05,-3px -3px 0 #5a2a05,
-    3px -3px 0 #5a2a05,-3px 3px 0 #5a2a05,
-    0 6px 0 #3a1700,
-    0 10px 16px rgba(0,0,0,.45);
-}
-
-/* Win sparkle halo */
-.win-sparkles{position:absolute;inset:0;pointer-events:none;z-index:4}
-.win-sparkles .twk{
-  position:absolute;width:8px;height:8px;
-  background:radial-gradient(circle,#fff 0%,transparent 70%);
-  border-radius:50%;
-  animation:twkFlicker 1.4s ease-in-out infinite;
-}
-@keyframes twkFlicker{0%,100%{opacity:0;transform:scale(.3)}50%{opacity:1;transform:scale(1.2)}}
-
-/* Tap-anywhere hint */
-.win-tap-hint{
-  position:absolute;bottom:30px;left:50%;transform:translateX(-50%);
-  color:rgba(255,255,255,.92);
-  font:600 13px 'Fredoka','Inter',sans-serif;
-  letter-spacing:.22em;text-transform:uppercase;
-  animation:tapPulse 1.3s ease-in-out infinite;
-  z-index:5;pointer-events:none;
-  opacity:0;animation-delay:2.3s;
-}
-@keyframes tapPulse{0%,100%{opacity:.55}50%{opacity:1}}
-
-/* Curtain-wipe (full-screen scene transition) */
-#curtain-wipe{position:fixed;inset:0;z-index:120;pointer-events:none}
-#curtain-wipe .cw{
-  position:absolute;top:0;bottom:0;width:52%;
-  background:repeating-linear-gradient(90deg,
-    #5a0814 0px,#a51d30 18px,#7a1224 32px,#c92f4d 48px,#7a1224 64px,#5a0814 80px);
-  box-shadow:inset 0 0 60px rgba(0,0,0,.6);
-  transition:transform .55s cubic-bezier(.5,0,.5,1);
-  will-change:transform;
-}
-#curtain-wipe .cw.l{left:0;transform:translateX(-104%);border-right:4px solid #ffd166}
-#curtain-wipe .cw.r{right:0;transform:translateX(104%);border-left:4px solid #ffd166}
-#curtain-wipe.in .cw.l,#curtain-wipe.in .cw.r{transform:translateX(0)}
-
-/* Coin-fly layer container */
-#coin-fly-layer{position:fixed;inset:0;pointer-events:none;z-index:30}
-
 </style>
 </head>
 <body>
@@ -1169,56 +948,11 @@ body.tutorial-l1 .pill.coin{animation:none}
           </div>
           <button class="icon-btn" id="btn-leave-play" title="Leave">✕</button>
         </div>
-        <!-- Painted storybook scene background (v0.4 Disney overhaul) -->
-        <div class="scene-bg" aria-hidden="true">
-          <div class="scene-floor"></div>
-          <div class="scene-vignette"></div>
-          <svg class="scene-prop scene-prop-leaf" viewBox="0 0 130 170" xmlns="http://www.w3.org/2000/svg">
-            <path d="M65 10 Q40 50 30 100 Q35 140 65 165 Q95 140 100 100 Q90 50 65 10 Z" fill="#2a7a3a" stroke="#1a5a2a" stroke-width="1.5"/>
-            <path d="M65 20 Q55 80 60 150 M65 20 Q75 80 70 150" stroke="#1a5a2a" stroke-width="1" fill="none"/>
-            <path d="M45 60 Q55 65 50 85 M85 60 Q75 65 80 85 M40 100 Q55 105 48 130 M90 100 Q75 105 82 130" stroke="#1a5a2a" stroke-width=".8" fill="none"/>
-          </svg>
-          <svg class="scene-prop scene-prop-cushion" viewBox="0 0 140 100" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <linearGradient id="cushG" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stop-color="#c44a7a"/>
-                <stop offset="100%" stop-color="#7a1a4a"/>
-              </linearGradient>
-            </defs>
-            <rect x="6" y="20" width="128" height="76" rx="14" fill="url(#cushG)" stroke="#5a1238" stroke-width="2"/>
-            <circle cx="40" cy="55" r="2.5" fill="#5a1238"/>
-            <circle cx="70" cy="50" r="2.5" fill="#5a1238"/>
-            <circle cx="100" cy="55" r="2.5" fill="#5a1238"/>
-          </svg>
-          <svg class="scene-prop scene-prop-books" viewBox="0 0 90 80" xmlns="http://www.w3.org/2000/svg">
-            <rect x="6" y="32" width="78" height="20" rx="2" fill="#8a3a3a" stroke="#5a2020" stroke-width="1.5"/>
-            <rect x="10" y="36" width="6" height="12" fill="#d4a049"/>
-            <rect x="12" y="50" width="76" height="22" rx="2" fill="#3a5a8a" stroke="#1a3050" stroke-width="1.5" transform="rotate(-4 50 60)"/>
-            <rect x="16" y="55" width="6" height="14" fill="#d4a049" transform="rotate(-4 19 60)"/>
-          </svg>
-        </div>
         <div class="chain-ribbon" id="chain-ribbon"></div>
         <div class="play-tip" id="play-tip"></div>
-        <!-- Old mascot bubble (kept for non-in-play states) -->
         <div class="mascot-bubble" id="mascot-bubble">
           <canvas class="mascot-canvas" id="mascot-canvas" width="108" height="108"></canvas>
           <div class="mascot-text" id="mascot-text">Tap a card ±1 from the waste!</div>
-        </div>
-        <!-- In-play mascot perched on a wooden chest (v0.4) -->
-        <div class="mascot-perch" id="mascot-perch" aria-hidden="true">
-          <svg class="mascot-chest" viewBox="0 0 118 54" xmlns="http://www.w3.org/2000/svg">
-            <ellipse cx="59" cy="52" rx="56" ry="3" fill="rgba(0,0,0,.4)"/>
-            <path d="M8 22 Q8 14 16 14 L102 14 Q110 14 110 22 L110 48 L8 48 Z" fill="#8a5a2a" stroke="#5a3818" stroke-width="2"/>
-            <path d="M8 22 Q8 14 16 14 L102 14 Q110 14 110 22 L110 28 L8 28 Z" fill="#6a4520" stroke="#3a2510" stroke-width="2"/>
-            <rect x="6" y="20" width="12" height="14" fill="#d4a049" stroke="#8a6020" stroke-width="1.5"/>
-            <rect x="100" y="20" width="12" height="14" fill="#d4a049" stroke="#8a6020" stroke-width="1.5"/>
-            <rect x="6" y="34" width="12" height="12" fill="#d4a049" stroke="#8a6020" stroke-width="1.5"/>
-            <rect x="100" y="34" width="12" height="12" fill="#d4a049" stroke="#8a6020" stroke-width="1.5"/>
-            <line x1="20" y1="34" x2="100" y2="34" stroke="rgba(0,0,0,.18)" stroke-width="1"/>
-            <line x1="20" y1="40" x2="100" y2="40" stroke="rgba(0,0,0,.14)" stroke-width="1"/>
-            <circle cx="59" cy="14" r="3" fill="#d4a049" stroke="#8a6020" stroke-width="1"/>
-          </svg>
-          <canvas class="mascot-canvas" id="mascot-canvas-perch" width="108" height="108"></canvas>
         </div>
         <canvas id="game-canvas"></canvas>
         <canvas class="coin-rain-canvas" id="coin-rain"></canvas>
@@ -1256,25 +990,11 @@ body.tutorial-l1 .pill.coin{animation:none}
     <div class="win-bg"></div>
     <div class="curtain l"><div class="curtain-tassel"></div></div>
     <div class="curtain r"><div class="curtain-tassel"></div></div>
-    <div class="win-sparkles" id="win-sparkles" aria-hidden="true"></div>
     <div class="win-inner">
       <div class="win-title" id="win-title">YOU DID IT!</div>
       <div class="win-star-wrap">
         <div class="win-rays"></div>
-        <div class="win-star">
-          <svg viewBox="-50 -50 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-            <defs>
-              <radialGradient id="starG" cx="40%" cy="35%" r="70%">
-                <stop offset="0%" stop-color="#fff5cf"/>
-                <stop offset="55%" stop-color="#ffd166"/>
-                <stop offset="100%" stop-color="#e08316"/>
-              </radialGradient>
-            </defs>
-            <path d="M0,-44 Q8,-14 38,-14 Q14,4 22,32 Q0,16 -22,32 Q-14,4 -38,-14 Q-8,-14 0,-44 Z"
-                  fill="url(#starG)" stroke="#7a3e0f" stroke-width="3" stroke-linejoin="round"/>
-            <path d="M-12,-30 Q-6,-22 -2,-14" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="3" stroke-linecap="round"/>
-          </svg>
-        </div>
+        <div class="win-star">★</div>
       </div>
       <div class="win-reward" id="win-reward">+0 🪙</div>
       <div class="win-stars">
@@ -1286,30 +1006,8 @@ body.tutorial-l1 .pill.coin{animation:none}
         <button class="win-cta secondary" id="win-map">🗺 Map</button>
         <button class="win-cta" id="win-next">Next →</button>
       </div>
-      <div class="win-tap-hint">Tap anywhere to continue</div>
     </div>
   </div>
-
-  <!-- Mickey-glove tutorial pointer (shown via JS when idle on L1-L3) -->
-  <div id="tut-hand" class="tut-hand" aria-hidden="true">
-    <svg viewBox="0 0 60 80" xmlns="http://www.w3.org/2000/svg">
-      <path d="M22 6 Q32 6 32 16 L32 32 L38 30 Q46 30 46 38 L46 50 Q46 70 28 74 L18 74 Q8 70 8 58 L8 36 Q8 30 14 30 Q20 30 22 34 Z"
-            fill="#fff" stroke="#1a0b2e" stroke-width="2.5" stroke-linejoin="round"/>
-      <circle cx="18" cy="44" r="1.4" fill="#1a0b2e"/>
-      <circle cx="22" cy="42" r="1.4" fill="#1a0b2e"/>
-      <circle cx="26" cy="42" r="1.4" fill="#1a0b2e"/>
-      <path d="M8 60 Q8 72 18 76 L40 76 Q46 72 46 60" fill="none" stroke="#1a0b2e" stroke-width="2.5"/>
-    </svg>
-  </div>
-
-  <!-- Full-screen red velvet curtain wipe (used for scene transitions) -->
-  <div id="curtain-wipe" aria-hidden="true">
-    <div class="cw l"></div>
-    <div class="cw r"></div>
-  </div>
-
-  <!-- DOM layer for fly-coins and score-pops -->
-  <div id="coin-fly-layer" aria-hidden="true"></div>
 
   <div id="splash">
     <canvas id="splash-canvas" width="600" height="400"></canvas>
@@ -1325,7 +1023,7 @@ body.tutorial-l1 .pill.coin{animation:none}
    ========================================================= */
 
 /* ============== [JS-01] CONSTANTS ============== */
-const VERSION = '0.4.0';
+const VERSION = '0.2.0';
 const CARD_W = 56;
 const CARD_H = 80;
 const CARD_R = 8;            // card corner radius
@@ -1618,10 +1316,7 @@ const DEFAULT_STATE = {
   dailyBest: {},           // ymd -> best score in daily mode
   dailyDoneYMD: '',
   splashSeen: false,
-  activeTab: 'play',
-  // v0.4 additions
-  l1Done: false,
-  displayedCoins: 0
+  activeTab: 'play'
 };
 let state = loadState();
 
@@ -1644,8 +1339,6 @@ function loadState() {
     if (!merged.dailyBest) merged.dailyBest = {};
     if (merged.lives === undefined) merged.lives = LIVES_MAX;
     if (!merged.activeWorld) merged.activeWorld = 1;
-    if (merged.l1Done === undefined) merged.l1Done = false;
-    if (merged.displayedCoins === undefined || merged.displayedCoins == null) merged.displayedCoins = merged.coins | 0;
     return merged;
   } catch (e) { return JSON.parse(JSON.stringify(DEFAULT_STATE)); }
 }
@@ -2334,20 +2027,9 @@ function startLevel(id) {
     game.introsShownThisRun[intro] = true;
   }
 
-  // v0.4: world data attribute drives scene-floor + prop tinting via CSS
-  document.body.dataset.world = String(def.world || 1);
-  // tutorial-l1 HUD-naked state (Disney shows NO HUD on the very first level)
-  if (id === 1 && !state.l1Done) {
-    document.body.classList.add('tutorial-l1');
-    state._tutorialTaps = 0;
-  } else {
-    document.body.classList.remove('tutorial-l1');
-  }
-  state.displayedCoins = state.coins;
   showPlayScreen();
   layoutCanvas();
   renderHUD();
-  armTutorialWatchdog();
   mp('level_start', { level: id, layout: def.layout, par: def.par });
   if (intro && game.introsShownThisRun[intro]) {
     setTimeout(() => toast(t('intro_' + intro)), 350);
@@ -2380,10 +2062,8 @@ function tryPlayCard(cardId) {
   if (game.history.length > 20) game.history.shift();
 
   c.cleared = true;
-  c.clearedAt = performance.now();
-  hideHand();
-  // animate to waste (bezier arc handled in drawCards)
-  c.anim = { kind:'toWaste', t:0, dur:340, fromX:c.x, fromY:c.y };
+  // animate to waste
+  c.anim = { kind:'toWaste', t:0, dur:280, fromX:c.x, fromY:c.y };
   game.waste = { rank: c.rank, suit: c.suit, wild: !!c.wild };
 
   game.chain += 1;
@@ -2392,19 +2072,14 @@ function tryPlayCard(cardId) {
   const base = 50;
   const multScore = base * COMBO_TIERS[tier].mult * (c.multValue || 1);
   game.score += multScore;
-  // v0.4 Disney compound reward: cloud puff + coin arc + green popup + sparkle ring
-  spawnCloudPuff(c.x, c.y);
-  // Derive coins from score for the visible feel (the actual coin balance only ticks at level end via queueCoinRollup)
+  // Coin-flavored popup (Disney: "+8c"). Show small coin number derived from score.
   const coinShown = Math.max(1, Math.floor(multScore / 10));
-  state.coins += coinShown;
-  flyCoinToHUD(c.x, c.y, Math.min(3, 1 + Math.floor(game.chain / 2)));
-  spawnScorePopup(c.x, c.y, '+' + coinShown + 'c' + (c.multValue > 1 ? ' ×' + c.multValue : ''));
+  spawnScorePopup(c.x, c.y, '+' + coinShown + '🪙' + (c.multValue > 1 ? ' ×' + c.multValue : ''));
 
   if (c.type === 'treasure') {
     state.coins += 30;
     spawnParticles(c.x, c.y, 14, '#ffd166');
-    spawnScorePopup(c.x, c.y - 0.04, '+30 c', '#ffd166');
-    flyCoinToHUD(c.x, c.y, 3);
+    spawnScorePopup(c.x, c.y - 0.04, '+30 🪙');
     saveState();
   }
   if (c.type === 'memory') {
@@ -2417,6 +2092,7 @@ function tryPlayCard(cardId) {
     spawnParticles(c.x, c.y, 16, '#ffd166');
   }
 
+  spawnParticles(c.x, c.y, 8, '#fff');
   haptic('impact');
   beepMatch(game.chain);
 
@@ -2426,25 +2102,11 @@ function tryPlayCard(cardId) {
   // chain-of-5 mission
   if (game.chain === 5) state.totalChains5 += 1, saveState();
 
-  // combo tier callout + mascot react milestone hops
+  // combo tier callout
   if (tier > game.multTier - 1 && tier > 0) {
     showComboCallout(tier);
   }
-  if (game.chain === 3 || game.chain === 5 || game.chain === 7) triggerMascotReact();
-  // tutorial-l1 reveal-after-N-taps system
-  if (document.body.classList.contains('tutorial-l1')) {
-    state._tutorialTaps = (state._tutorialTaps | 0) + 1;
-    if (state._tutorialTaps >= 3) {
-      document.body.classList.remove('tutorial-l1');
-      const coinPill = document.getElementById('hud-coins');
-      if (coinPill) coinPill.classList.add('reveal-hud');
-      state.l1Done = true;
-      saveState();
-    }
-  }
   renderHUD();
-  queueCoinRollup();
-  armTutorialWatchdog();
   checkWin();
 }
 
@@ -2479,10 +2141,7 @@ function revealCardsBeneath() {
   reveals.forEach(c => {
     c.faceDown = false;
     c.anim = { kind:'flip', t: 0, dur: 280 };
-    // v0.4: sparkle pop + reveal bounce + tiny pitch sweep
-    spawnSparkleRing(c.x, c.y);
-    c._revealBounceT = performance.now() + 280; // bounce starts when flip ends
-    sfxCardReveal();
+    // decrement lock count on neighbors if newly revealed
   });
   // also, every match: decrement lockCount of neighboring locked cards
   // (treated as a generic effect — neighbors are blockers' parents or siblings of just-cleared)
@@ -2659,9 +2318,8 @@ function finishLevel(won) {
     state.gamesPlayedYMD = ymd();
     saveState();
     mp('level_complete', { level: game.levelId, score: game.score, stars, chain_best: game.chain });
-    // v0.4: theatrical pre-win sequence — HUD slides out, coin shower bursts,
-    // then ~1.4s later openLevelCompleteModal layers the curtains/star/title in.
-    prepWinSequence(stars);
+    spawnConfetti();
+    setTimeout(() => openLevelCompleteModal(stars), 700);
   } else {
     saveState();
     mp('level_failed', { level: game.levelId, score: game.score });
@@ -2759,12 +2417,6 @@ function drawRoundedRect(c, x, y, w, h, r) {
 }
 
 function drawCardFace(c, x, y, w, h, card, scaleX, compact) {
-  // v0.4 Disney-aligned dual-tone face:
-  //  - top ~28% banner colored by suit family (navy for ♠/♣, deep red for ♥/♦)
-  //  - white field below
-  //  - big chunky rank centered in white field, tiny rank+suit pip in upper-left of banner
-  //  - 2px highlight stripe along the very top edge
-  //  - no centered suit pip, no rotated bottom-right rank
   scaleX = (scaleX == null) ? 1 : scaleX;
   c.save();
   c.translate(x + w/2, y + h/2);
@@ -2773,46 +2425,40 @@ function drawCardFace(c, x, y, w, h, card, scaleX, compact) {
   // shadow
   c.fillStyle = 'rgba(0,0,0,0.35)';
   drawRoundedRect(c, 1, 3, w, h, CARD_R); c.fill();
-  // white field
-  c.fillStyle = '#ffffff';
+  // face
+  const grad = c.createLinearGradient(0, 0, 0, h);
+  grad.addColorStop(0, '#fffcf2');
+  grad.addColorStop(1, '#e9e1c4');
+  c.fillStyle = grad;
   drawRoundedRect(c, 0, 0, w, h, CARD_R); c.fill();
-  const rank = RANK_LABEL[card.rank];
-  const suit = SUITS[card.suit % 4];
-  const isRed = (suit === '♥' || suit === '♦');
-  const bannerColor = isRed ? '#c92f4d' : '#1e3a8a';
-  // navy/red banner clipped to top ~28%
-  c.save();
-  c.beginPath();
-  drawRoundedRect(c, 0, 0, w, h, CARD_R);
-  c.clip();
-  c.fillStyle = bannerColor;
-  c.fillRect(0, 0, w, h * 0.28);
-  c.restore();
-  // top highlight stripe
-  c.fillStyle = 'rgba(255,255,255,0.22)';
-  c.fillRect(2, 2, w - 4, 2);
-  // tiny rank+suit pip in upper-left of banner
-  c.fillStyle = '#ffffff';
-  c.font = '800 ' + Math.floor(h * 0.16) + 'px Fredoka, Inter, sans-serif';
-  c.textBaseline = 'top';
-  c.textAlign = 'left';
-  c.fillText(rank, 4, 3);
-  c.font = '700 ' + Math.floor(h * 0.13) + 'px Inter, sans-serif';
-  c.fillText(suit, 5, 3 + Math.floor(h * 0.16));
-  // outer border
-  c.strokeStyle = 'rgba(0,0,0,0.12)';
+  // inner border
+  c.strokeStyle = 'rgba(0,0,0,0.10)';
   c.lineWidth = 1;
   drawRoundedRect(c, 1, 1, w-2, h-2, CARD_R-1); c.stroke();
+  // rank+suit corners — BIG for readability (Disney/SGH pattern)
+  const rank = RANK_LABEL[card.rank];
+  const suit = SUITS[card.suit % 4];
+  c.fillStyle = SUIT_COLOR[suit];
+  c.font = '800 ' + Math.floor(h*0.26) + 'px Inter, system-ui, sans-serif';
+  c.textBaseline = 'top';
+  c.textAlign = 'left';
+  c.fillText(rank, 5, 3);
+  c.font = '700 ' + Math.floor(h*0.18) + 'px Inter, system-ui, sans-serif';
+  c.fillText(suit, 6, 3 + Math.floor(h*0.26));
   if (!compact) {
-    // BIG chunky rank centered in the white field (the iconic Disney pattern)
-    c.fillStyle = isRed ? '#c92f4d' : '#1a0b2e';
-    c.font = '700 ' + Math.floor(h * 0.50) + 'px Fredoka, Inter, sans-serif';
+    // big center suit (only when card is fully visible — bottom row + waste)
+    c.font = '700 ' + Math.floor(h*0.45) + 'px Inter, system-ui, sans-serif';
     c.textAlign = 'center'; c.textBaseline = 'middle';
-    c.fillText(rank, w / 2, h * 0.65);
-    // small suit pip in the lower-right of the white field
-    c.font = '700 ' + Math.floor(h * 0.20) + 'px Inter, sans-serif';
-    c.textAlign = 'right'; c.textBaseline = 'bottom';
-    c.fillText(suit, w - 4, h - 3);
+    c.fillText(suit, w/2, h/2 + 4);
+    // bottom-right rank rotated
+    c.save();
+    c.translate(w - 5, h - 4);
+    c.rotate(Math.PI);
+    c.font = '800 ' + Math.floor(h*0.26) + 'px Inter, system-ui, sans-serif';
+    c.textBaseline = 'top';
+    c.textAlign = 'left';
+    c.fillText(rank, 0, 0);
+    c.restore();
   }
   // overlays for types
   if (card.type === 'mult') {
@@ -2865,8 +2511,6 @@ function drawCardFace(c, x, y, w, h, card, scaleX, compact) {
 }
 
 function drawCardBack(c, x, y, w, h, scaleX) {
-  // v0.4 Disney-restrained back: shadow, white outer border, royal-blue field,
-  // lighter blue inset panel, tiny cream star center. No dashes, no big glyph.
   scaleX = (scaleX == null) ? 1 : scaleX;
   c.save();
   c.translate(x + w/2, y + h/2);
@@ -2875,67 +2519,38 @@ function drawCardBack(c, x, y, w, h, scaleX) {
   // shadow
   c.fillStyle = 'rgba(0,0,0,0.35)';
   drawRoundedRect(c, 1, 3, w, h, CARD_R); c.fill();
-  // white outer border
-  c.fillStyle = '#ffffff';
+  // back
+  const grad = c.createLinearGradient(0, 0, w, h);
+  grad.addColorStop(0, '#6a3df0');
+  grad.addColorStop(1, '#2a0f5a');
+  c.fillStyle = grad;
   drawRoundedRect(c, 0, 0, w, h, CARD_R); c.fill();
-  // royal blue field
-  c.fillStyle = '#1e3a8a';
-  drawRoundedRect(c, 2, 2, w - 4, h - 4, CARD_R - 1); c.fill();
-  // lighter inset panel
-  c.fillStyle = '#2da9e8';
-  drawRoundedRect(c, 5, 5, w - 10, h - 10, CARD_R - 2); c.fill();
-  // inner shadow stroke
-  c.strokeStyle = 'rgba(0,0,0,0.12)';
-  c.lineWidth = 1;
-  drawRoundedRect(c, 5, 5, w - 10, h - 10, CARD_R - 2); c.stroke();
-  // small cream star center (low alpha — keeps back quiet)
-  c.fillStyle = 'rgba(255,247,194,0.42)';
-  c.font = '700 ' + Math.floor(h * 0.20) + 'px Inter, sans-serif';
+  c.strokeStyle = 'rgba(255,255,255,0.25)';
+  c.setLineDash([4,3]); c.lineWidth = 1.5;
+  drawRoundedRect(c, 4, 4, w-8, h-8, CARD_R-2); c.stroke();
+  c.setLineDash([]);
+  c.fillStyle = 'rgba(255,209,102,0.85)';
+  c.font = '700 ' + Math.floor(h*0.36) + 'px Inter, sans-serif';
   c.textAlign = 'center'; c.textBaseline = 'middle';
-  c.fillText('★', w / 2, h / 2);
+  c.fillText('♛', w/2, h/2);
   c.restore();
 }
 
 function drawCards() {
-  // v0.4: Empty-slot ghost pre-pass — soft brown rounded-rect at each cleared
-  // bottom-row card's position so the player can track where things were.
-  const now = performance.now();
-  for (const card of game.cards) {
-    if (!card.cleared) continue;
-    if (card.layer > 0) continue; // only ghost bottom-row positions
-    if (card.faceDown) continue;
-    const pos = normToScreen(card.x, card.y);
-    const ageMs = card.clearedAt ? (now - card.clearedAt) : 0;
-    const fadeK = clamp(ageMs / 1500, 0, 1);
-    const alpha = 0.30 * (1 - fadeK * 0.7);
-    if (alpha <= 0.01) continue;
-    ctx.save();
-    ctx.fillStyle = 'rgba(80,50,30,' + alpha + ')';
-    drawRoundedRect(ctx, pos.x - CARD_W/2, pos.y - CARD_H/2, CARD_W, CARD_H, CARD_R);
-    ctx.fill();
-    ctx.restore();
-  }
-  // Sort by layer then y so deeper cards render first
+  // sort by layer then y so deeper cards render first
   const sorted = game.cards.slice().sort((a,b) => (a.layer - b.layer) || (a.y - b.y));
   for (const card of sorted) {
     if (card.cleared && !card.anim) continue;
     let nx = card.x, ny = card.y;
     let scaleX = 1;
-    let tilt = 0;
     if (card.anim) {
       card.anim.t += 16;
       const p = clamp(card.anim.t / card.anim.dur, 0, 1);
       if (card.anim.kind === 'toWaste') {
-        // v0.4: quadratic-bezier arc with peak scale-up + tilt toward direction
         const target = { x: wastePileNorm().x, y: wastePileNorm().y };
-        const mx = (card.anim.fromX + target.x) / 2;
-        const my = Math.min(card.anim.fromY, target.y) - 0.10;
         const e = easeOutCubic(p);
-        const u = 1 - e;
-        nx = u*u * card.anim.fromX + 2*u*e * mx + e*e * target.x;
-        ny = u*u * card.anim.fromY + 2*u*e * my + e*e * target.y;
-        scaleX = 1 + Math.sin(p * Math.PI) * 0.08;
-        tilt = Math.sin(p * Math.PI) * 0.18 * (target.x > card.anim.fromX ? 1 : -1);
+        nx = lerp(card.anim.fromX, target.x, e);
+        ny = lerp(card.anim.fromY, target.y, e);
         if (p >= 1) { card.anim = null; }
       } else if (card.anim.kind === 'flip') {
         const e = p;
@@ -2948,39 +2563,25 @@ function drawCards() {
         if (p >= 1) card.anim = null;
       }
     }
-    // v0.4: post-reveal scale bounce (300ms after a face-down flip completed)
-    if (card._revealBounceT) {
-      const elapsed = now - card._revealBounceT;
-      if (elapsed < 300) {
-        scaleX *= 1 + Math.sin(elapsed / 300 * Math.PI) * 0.08;
-      } else {
-        delete card._revealBounceT;
-      }
-    }
     if (card.cleared && !card.anim) continue;
     const pos = normToScreen(nx, ny);
     const x = pos.x - CARD_W/2;
     const y = pos.y - CARD_H/2;
     const showFace = !card.faceDown || (card.anim && card.anim.kind === 'flip' && card.anim.t > card.anim.dur*0.5);
+    // covered = at least one blocker still uncleared. Render compact (no center suit / no bottom rank).
     const covered = isCardCovered(card);
-    if (tilt !== 0) {
-      ctx.save();
-      ctx.translate(pos.x, pos.y);
-      ctx.rotate(tilt);
-      ctx.translate(-pos.x, -pos.y);
-    }
     if (showFace) drawCardFace(ctx, x, y, CARD_W, CARD_H, card, scaleX, covered);
     else drawCardBack(ctx, x, y, CARD_W, CARD_H, scaleX);
-    if (tilt !== 0) ctx.restore();
-    // playable highlight — pulse
+    // playable highlight — bigger + pulse
     if (!card.faceDown && !card.cleared && isPlayable(card, game) && (Card.isMatch(card.rank, game.waste.rank) || game.waste.wild)) {
-      const pulse = 0.5 + Math.sin(now * 0.006) * 0.5;
+      const pulse = 0.5 + Math.sin(performance.now() * 0.006) * 0.5;
       ctx.save();
-      ctx.strokeStyle = 'rgba(255,209,102,' + (0.55 + pulse * 0.45) + ')';
+      ctx.strokeStyle = 'rgba(6,214,160,' + (0.5 + pulse * 0.5) + ')';
       ctx.lineWidth = 3;
       drawRoundedRect(ctx, x - 2, y - 2, CARD_W + 4, CARD_H + 4, CARD_R + 2);
       ctx.stroke();
-      ctx.shadowColor = 'rgba(255,209,102,0.7)';
+      // soft glow
+      ctx.shadowColor = 'rgba(6,214,160,0.7)';
       ctx.shadowBlur = 8 + pulse * 8;
       drawRoundedRect(ctx, x - 2, y - 2, CARD_W + 4, CARD_H + 4, CARD_R + 2);
       ctx.stroke();
@@ -2998,61 +2599,19 @@ function isCardCovered(card) {
 }
 
 function drawParticles() {
-  // v0.4: shape switch for 'puff' (soft cloud), 'sparkle' (cross-star),
-  // 'petal' (warm rose petals with sway). Default is the legacy circle.
   const next = [];
   for (const p of game.particles) {
     p.t += 1;
     if (p.t > p.life) continue;
     const k = p.t / p.life;
     const pos = normToScreen(p.x, p.y);
-    if (p.shape === 'puff') {
-      const scale = 1 + k * 0.7;
-      ctx.save();
-      ctx.globalAlpha = 0.7 * (1 - k);
-      ctx.fillStyle = p.color || '#fff';
-      ctx.beginPath();
-      ctx.arc(pos.x + (p.vx * p.t || 0), pos.y + (p.vy * p.t || 0) - k * 8, (p.r || 8) * scale, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
-    } else if (p.shape === 'sparkle') {
-      ctx.save();
-      ctx.globalAlpha = 1 - k;
-      ctx.fillStyle = p.color || '#fff';
-      const cx = pos.x + p.vx * p.t;
-      const cy = pos.y + p.vy * p.t + 0.5 * 0.05 * p.t * p.t;
-      const r = p.r * (1 - k * 0.4);
-      // 4-point cross-star
-      ctx.beginPath();
-      ctx.moveTo(cx - r * 3, cy); ctx.lineTo(cx, cy - r);
-      ctx.lineTo(cx + r * 3, cy); ctx.lineTo(cx, cy + r);
-      ctx.closePath(); ctx.fill();
-      ctx.beginPath();
-      ctx.moveTo(cx, cy - r * 3); ctx.lineTo(cx - r, cy);
-      ctx.lineTo(cx, cy + r * 3); ctx.lineTo(cx + r, cy);
-      ctx.closePath(); ctx.fill();
-      ctx.restore();
-    } else if (p.shape === 'petal') {
-      ctx.save();
-      ctx.globalAlpha = 1 - k;
-      ctx.fillStyle = p.color;
-      const sway = Math.sin((p.t + (p.seed || 0)) * 0.08) * 15;
-      ctx.translate(pos.x + sway, pos.y + p.vy * p.t + 0.5 * 0.025 * p.t * p.t);
-      ctx.rotate((p.rot || 0) + p.t * 0.02);
-      ctx.beginPath();
-      ctx.ellipse(0, 0, p.r * 0.6, p.r * 1.3, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
-    } else {
-      // legacy default — circle
-      ctx.save();
-      ctx.globalAlpha = 1 - k;
-      ctx.fillStyle = p.color;
-      ctx.beginPath();
-      ctx.arc(pos.x + p.vx * p.t, pos.y + p.vy * p.t + 0.5 * 0.05 * p.t * p.t, p.r * (1 - k * 0.5), 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
-    }
+    ctx.save();
+    ctx.globalAlpha = 1 - k;
+    ctx.fillStyle = p.color;
+    ctx.beginPath();
+    ctx.arc(pos.x + p.vx * p.t, pos.y + p.vy * p.t + 0.5 * 0.05 * p.t * p.t, p.r * (1 - k * 0.5), 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
     next.push(p);
   }
   game.particles = next;
@@ -3148,40 +2707,17 @@ function spawnParticles(nx, ny, n, color) {
 }
 
 function spawnScorePopup(nx, ny, text, color) {
-  // v0.4: DOM-based popup (was canvas text). Spawns a .score-pop element at
-  // the screen-space card position. Default color = popup green (Disney).
-  const layer = document.getElementById('coin-fly-layer');
-  if (!layer) return;
-  const el = document.createElement('div');
-  el.className = 'score-pop';
-  // strip the legacy emoji we used in pre-v0.4 popups so the new design reads clean
-  el.textContent = (text || '').replace('🪙', '').replace('🪙', '').trim();
-  if (color === '#ffd166' || color === 'gold') el.classList.add('gold');
-  else if (color) el.style.color = color;
-  // Position over the played card in screen coords
-  const pos = normToScreen(nx, ny);
-  const cr = canvas.getBoundingClientRect();
-  el.style.left = (cr.left + pos.x) + 'px';
-  el.style.top = (cr.top + pos.y - 8) + 'px';
-  layer.appendChild(el);
-  // Trigger the .go transition on next frame
-  requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('go')));
-  setTimeout(() => { try { el.remove(); } catch (_) {} }, 720);
+  game.scorePopups.push({ x: nx, y: ny, t: 0, life: 50, text, color });
 }
 
 function spawnConfetti() {
-  // v0.4: warm rose-petal palette + shape:'petal' with sway + rotation.
-  const palette = ['#ffe6da','#ffd0d8','#ffe4b5','#ffd166','#fff3c2'];
+  const colors = ['#ffd166','#06d6a0','#ef476f','#118ab2','#fff','#a83af0'];
   for (let i = 0; i < 60; i++) {
     game.particles.push({
-      x: rand(0.1, 0.9), y: rand(-0.1, 0.05),
-      vx: rand(-1, 1), vy: rand(0, 2),
-      t: 0, life: rand(100, 140),
-      r: rand(4, 7),
-      seed: Math.random() * 99,
-      rot: Math.random() * Math.PI * 2,
-      color: palette[i % palette.length],
-      shape: 'petal'
+      x: 0.5, y: 0.2,
+      vx: rand(-3, 3), vy: rand(-2, -5),
+      t: 0, life: 80 + Math.random() * 40,
+      r: rand(2, 4), color: colors[i % colors.length]
     });
   }
 }
@@ -3197,299 +2733,6 @@ function flashComboBreak() {
   setTimeout(() => { canvas.style.transform = 'translateX(3px)'; }, 60);
   setTimeout(() => { canvas.style.transform = 'translateX(0)'; }, 120);
 }
-
-/* ============================================================
-   [JS-10b] v0.4 Disney FX helpers — cloud puff, sparkle ring,
-   fly-coin arc, tutorial pointer, mascot react, coin rollup,
-   audio sfx, curtain wipe, prep-win sequence, sparkle halo.
-   ============================================================ */
-
-// Soft cloud puff on every successful tap (4 ellipses, ~300ms life)
-function spawnCloudPuff(nx, ny) {
-  for (let i = 0; i < 4; i++) {
-    game.particles.push({
-      x: nx, y: ny,
-      vx: (Math.random() - 0.5) * 0.4,
-      vy: (Math.random() - 0.5) * 0.4 - 0.4,
-      t: 0, life: 18,
-      r: rand(7, 11),
-      color: '#fff', shape: 'puff'
-    });
-  }
-  sfxPuff();
-}
-
-// Sparkle ring on every newly revealed card (6 cross-stars in a ring)
-function spawnSparkleRing(nx, ny) {
-  for (let i = 0; i < 6; i++) {
-    const a = (i / 6) * Math.PI * 2;
-    game.particles.push({
-      x: nx + Math.cos(a) * 0.02,
-      y: ny + Math.sin(a) * 0.02,
-      vx: Math.cos(a) * 0.6,
-      vy: Math.sin(a) * 0.6 - 0.4,
-      t: 0, life: 22,
-      r: rand(1.6, 2.4),
-      color: '#fff', shape: 'sparkle'
-    });
-  }
-}
-
-// Coin-arc fly to the HUD coin pill (DOM-based, Web Animations API)
-function flyCoinToHUD(fromX_norm, fromY_norm, n) {
-  n = Math.max(1, Math.min(4, n | 0));
-  const hudCoin = document.getElementById('hud-coins');
-  if (!hudCoin) return;
-  const hudRect = hudCoin.getBoundingClientRect();
-  const ex = hudRect.left + hudRect.width / 2;
-  const ey = hudRect.top + hudRect.height / 2;
-  const cr = canvas.getBoundingClientRect();
-  const pos = normToScreen(fromX_norm, fromY_norm);
-  const sx = cr.left + pos.x;
-  const sy = cr.top + pos.y;
-  for (let i = 0; i < n; i++) {
-    setTimeout(() => {
-      const el = document.createElement('div');
-      el.className = 'fly-coin';
-      document.body.appendChild(el);
-      // arc midpoint above the line between sy/ey
-      const midX = (sx + ex) / 2 + (Math.random() - 0.5) * 30;
-      const midY = Math.min(sy, ey) - 60 - i * 6;
-      try {
-        const anim = el.animate([
-          { transform: `translate(${sx - 10}px, ${sy - 10}px) scale(.7)`, opacity: 1, offset: 0 },
-          { transform: `translate(${midX - 10}px, ${midY - 10}px) scale(1.1)`, opacity: 1, offset: 0.5 },
-          { transform: `translate(${ex - 10}px, ${ey - 10}px) scale(.55)`, opacity: .15, offset: 1 }
-        ], { duration: 700, easing: 'cubic-bezier(.4,0,.6,1)', fill: 'forwards' });
-        anim.onfinish = () => {
-          try { el.remove(); } catch (_) {}
-          hudCoin.classList.add('land');
-          setTimeout(() => hudCoin.classList.remove('land'), 250);
-          sfxCoinPickup(i);
-        };
-      } catch (_) {
-        // Fallback for browsers without WAAPI
-        setTimeout(() => { try { el.remove(); } catch (_) {} }, 700);
-      }
-    }, i * 80);
-  }
-}
-
-// Mickey-glove tutorial pointer (idle watchdog on L1-L3)
-function pointAtCard(card) {
-  const pos = normToScreen(card.x, card.y);
-  const rect = canvas.getBoundingClientRect();
-  const hand = document.getElementById('tut-hand');
-  if (!hand) return;
-  hand.style.left = (rect.left + pos.x - 14) + 'px';
-  hand.style.top  = (rect.top + pos.y + CARD_H * 0.45) + 'px';
-  hand.classList.add('show');
-}
-function hideHand() {
-  const hand = document.getElementById('tut-hand');
-  if (hand) hand.classList.remove('show');
-}
-function armTutorialWatchdog() {
-  if (!game.active || game.finished || game.levelId > 3) return;
-  clearTimeout(state._idleHandT);
-  state._idleHandT = setTimeout(() => {
-    const valid = game.cards.find(c =>
-      !c.cleared && !c.faceDown &&
-      isPlayable(c, game) &&
-      (Card.isMatch(c.rank, game.waste.rank) || game.waste.wild));
-    if (valid) pointAtCard(valid);
-  }, 2800);
-}
-
-// Deferred coin-counter roll-up (Disney: pill ticks AFTER popups, not during)
-function queueCoinRollup() {
-  clearTimeout(state._coinRollupT);
-  state._coinRollupT = setTimeout(() => {
-    const el = document.getElementById('hud-coins-n');
-    if (!el) return;
-    const from = state.displayedCoins | 0;
-    const to = state.coins | 0;
-    if (from === to) return;
-    countUp(el, from, to, 700, v => String(v | 0).replace(/\B(?=(\d{3})+(?!\d))/g, ','));
-    state.displayedCoins = to;
-  }, 900);
-}
-
-// Mascot hop reaction (chain milestones)
-function triggerMascotReact() {
-  const cv = document.getElementById('mascot-canvas-perch') || document.getElementById('mascot-canvas');
-  if (!cv) return;
-  cv.classList.add('react');
-  setTimeout(() => cv.classList.remove('react'), 600);
-}
-
-// Curtain wipe between scenes (close, run fn, open)
-function curtainTransition(fn) {
-  const c = document.getElementById('curtain-wipe');
-  if (!c) { fn && fn(); return; }
-  c.classList.add('in');
-  sfxCurtainSwoosh();
-  setTimeout(() => {
-    try { fn && fn(); } catch (e) { console.warn(e); }
-    setTimeout(() => c.classList.remove('in'), 320);
-  }, 620);
-}
-
-// Pre-win sequence — HUD slides out + coin shower BEFORE the modal
-function prepWinSequence(stars) {
-  document.body.classList.add('win-leaving');
-  hideHand();
-  spawnConfetti();
-  if (typeof startCoinRain === 'function') startCoinRain(45);
-  // Big DOM coin burst from screen center
-  const cx = window.innerWidth / 2;
-  const cy = window.innerHeight / 2;
-  for (let i = 0; i < 18; i++) {
-    setTimeout(() => {
-      const el = document.createElement('div');
-      el.className = 'fly-coin';
-      el.style.width = '28px'; el.style.height = '28px';
-      document.body.appendChild(el);
-      const angle = (i / 18) * Math.PI * 2 + Math.random() * 0.4;
-      const dist = 180 + Math.random() * 120;
-      const ex = cx + Math.cos(angle) * dist;
-      const ey = cy + Math.sin(angle) * dist;
-      try {
-        const a = el.animate([
-          { transform: `translate(${cx - 14}px, ${cy - 14}px) scale(0) rotate(0deg)`, opacity: 1, offset: 0 },
-          { transform: `translate(${(cx + ex) / 2 - 14}px, ${(cy + ey) / 2 - 14 - 60}px) scale(1.3) rotate(360deg)`, opacity: 1, offset: 0.5 },
-          { transform: `translate(${ex - 14}px, ${ey - 14}px) scale(.6) rotate(720deg)`, opacity: 0, offset: 1 }
-        ], { duration: 900, easing: 'cubic-bezier(.4,0,.6,1)', fill: 'forwards' });
-        a.onfinish = () => { try { el.remove(); } catch (_) {} };
-      } catch (_) {
-        setTimeout(() => { try { el.remove(); } catch (_) {} }, 900);
-      }
-    }, i * 40);
-  }
-  setTimeout(() => {
-    document.body.classList.remove('win-leaving');
-    openLevelCompleteModal(stars);
-  }, 1400);
-}
-
-// Sparkle halo around the win star
-function spawnWinSparkleHalo() {
-  const root = document.getElementById('win-sparkles');
-  if (!root) return;
-  root.innerHTML = '';
-  for (let i = 0; i < 14; i++) {
-    const s = document.createElement('span');
-    s.className = 'twk';
-    s.style.left = (20 + Math.random() * 60) + '%';
-    s.style.top = (18 + Math.random() * 50) + '%';
-    s.style.animationDelay = (Math.random() * 1.4) + 's';
-    s.style.animationDuration = (1 + Math.random() * 0.6) + 's';
-    root.appendChild(s);
-  }
-}
-
-// ===== Audio synths added for v0.4 =====
-function sfxPuff() {
-  const ac = ensureAC(); if (!ac) return;
-  try {
-    const buf = ac.createBuffer(1, Math.floor(ac.sampleRate * 0.07), ac.sampleRate);
-    const data = buf.getChannelData(0);
-    for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / data.length);
-    const src = ac.createBufferSource(); src.buffer = buf;
-    const filt = ac.createBiquadFilter(); filt.type = 'lowpass'; filt.frequency.value = 1200;
-    const g = ac.createGain(); g.gain.value = 0.15;
-    g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.07);
-    src.connect(filt).connect(g).connect(ac.destination);
-    src.start();
-    src.stop(ac.currentTime + 0.08);
-  } catch (_) {}
-}
-function sfxCoinPickup(i) {
-  const ac = ensureAC(); if (!ac) return;
-  i = i | 0;
-  try {
-    const o1 = ac.createOscillator(); const o2 = ac.createOscillator();
-    const g = ac.createGain();
-    o1.type = 'triangle'; o1.frequency.value = 880;
-    o2.type = 'sine';     o2.frequency.value = 1320;
-    o1.detune.value = -i * 8; o2.detune.value = -i * 8;
-    g.gain.setValueAtTime(0, ac.currentTime);
-    g.gain.linearRampToValueAtTime(0.10, ac.currentTime + 0.005);
-    g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.065);
-    o1.connect(g); o2.connect(g); g.connect(ac.destination);
-    o1.start(); o2.start();
-    o1.stop(ac.currentTime + 0.07); o2.stop(ac.currentTime + 0.07);
-  } catch (_) {}
-}
-function sfxCardReveal() {
-  const ac = ensureAC(); if (!ac) return;
-  try {
-    const o = ac.createOscillator(); const g = ac.createGain();
-    o.type = 'triangle';
-    o.frequency.setValueAtTime(660, ac.currentTime);
-    o.frequency.linearRampToValueAtTime(990, ac.currentTime + 0.11);
-    g.gain.setValueAtTime(0.08, ac.currentTime);
-    g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.12);
-    o.connect(g).connect(ac.destination);
-    o.start(); o.stop(ac.currentTime + 0.13);
-  } catch (_) {}
-}
-function sfxCurtainSwoosh() {
-  const ac = ensureAC(); if (!ac) return;
-  try {
-    const dur = 0.35;
-    const buf = ac.createBuffer(1, Math.floor(ac.sampleRate * dur), ac.sampleRate);
-    const data = buf.getChannelData(0);
-    let last = 0;
-    for (let i = 0; i < data.length; i++) {
-      const w = (Math.random() * 2 - 1) * 0.4;
-      last = (last + w) * 0.5;
-      data[i] = last;
-    }
-    const src = ac.createBufferSource(); src.buffer = buf;
-    const filt = ac.createBiquadFilter(); filt.type = 'lowpass';
-    filt.frequency.setValueAtTime(200, ac.currentTime);
-    filt.frequency.linearRampToValueAtTime(800, ac.currentTime + dur);
-    const g = ac.createGain();
-    g.gain.setValueAtTime(0, ac.currentTime);
-    g.gain.linearRampToValueAtTime(0.18, ac.currentTime + 0.05);
-    g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + dur);
-    src.connect(filt).connect(g).connect(ac.destination);
-    src.start(); src.stop(ac.currentTime + dur + 0.02);
-  } catch (_) {}
-}
-function sfxMagicBurst() {
-  const ac = ensureAC(); if (!ac) return;
-  try {
-    const freqs = [523, 659, 784];
-    freqs.forEach((f, i) => {
-      const o = ac.createOscillator(); const g = ac.createGain();
-      o.type = 'triangle'; o.frequency.value = f;
-      const start = ac.currentTime + i * 0.12;
-      g.gain.setValueAtTime(0, start);
-      g.gain.linearRampToValueAtTime(0.14, start + 0.02);
-      g.gain.exponentialRampToValueAtTime(0.001, start + 0.30);
-      o.connect(g).connect(ac.destination);
-      o.start(start); o.stop(start + 0.32);
-    });
-  } catch (_) {}
-}
-function sfxStarLand() {
-  const ac = ensureAC(); if (!ac) return;
-  try {
-    const o1 = ac.createOscillator(); const o2 = ac.createOscillator();
-    const g = ac.createGain();
-    o1.type = 'triangle'; o1.frequency.value = 1175;
-    o2.type = 'sine';     o2.frequency.value = 1568;
-    g.gain.setValueAtTime(0, ac.currentTime);
-    g.gain.linearRampToValueAtTime(0.13, ac.currentTime + 0.005);
-    g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.10);
-    o1.connect(g); o2.connect(g); g.connect(ac.destination);
-    o1.start(); o2.start();
-    o1.stop(ac.currentTime + 0.11); o2.stop(ac.currentTime + 0.11);
-  } catch (_) {}
-}
-
 
 function showComboCallout(tier) {
   const el = document.getElementById('combo-callout');
@@ -3576,11 +2819,7 @@ function frame() {
   drawCards();
   drawParticles();
   drawScorePopups();
-  // v0.4: draw the mascot when its speech bubble is visible OR when in-play (perched bottom-left)
-  if (typeof drawMascot === 'function' && (
-        (mascot.el && mascot.el.classList.contains('show')) ||
-        document.body.classList.contains('in-play')
-      )) drawMascot();
+  if (typeof drawMascot === 'function' && mascot.el && mascot.el.classList.contains('show')) drawMascot();
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
@@ -3644,13 +2883,13 @@ function showMapScreen() {
 function updatePlayTip() {
   const tip = document.getElementById('play-tip');
   if (!tip) return;
-  // v0.4: Disney convention — <b> = higher (red), <em> = lower (blue)
+  // Show persistent tutorial text on L1-L3 (Disney pattern).
   if (game.levelId <= 3) {
     const lang = state.settings.lang || 'en';
     const isRu = lang === 'ru' || lang === 'uk';
     tip.innerHTML = isRu
-      ? 'Касайся карты на <b>+1</b> или <em>−1</em> от карты в отбое'
-      : 'Tap a card one rank <b>higher</b> or <em>lower</em> than the card at the bottom';
+      ? 'Касайся карты на <em>+1</em> или <b>−1</b> от карты в отбое'
+      : 'Tap a card one rank <em>higher</em> or <b>lower</b> than the card at the bottom';
     tip.classList.add('show');
   } else {
     tip.classList.remove('show');
@@ -3931,62 +3170,46 @@ function closeModal() {
   root.innerHTML = '';
 }
 function openLevelCompleteModal(stars) {
-  // v0.4 Disney theatrical win overlay — red velvet curtains, balloon SVG star
-  // with conic rays, layered sequence: backdrop / curtains / star / title /
-  // reward / star ratings / CTA / tap-hint. Plus audio sequenced at each beat.
+  // Theatrical "YOU DID IT!" overlay — red curtains + giant star + coin count-up.
+  // Replaces the old modal-style level-complete with Disney's signature win screen.
   const def = LEVELS.find(l => l.id === game.levelId);
   const reward = 50 + stars * 30 + (state.battlePassUntil > Date.now() ? 30 : 0);
   const next = game.levelId + 1;
   const overlay = document.getElementById('win-overlay');
   if (!overlay) return;
-  // Reset star ratings + reward
+  // Reset star states
   ['ws1','ws2','ws3'].forEach(id => document.getElementById(id).classList.remove('lit'));
-  document.getElementById('win-reward').textContent = '+0';
+  document.getElementById('win-reward').textContent = '+0 🪙';
   document.getElementById('win-title').textContent = stars === 3 ? 'PERFECT!' : (stars === 2 ? 'GREAT!' : 'YOU DID IT!');
+  // Show overlay
   overlay.classList.add('show');
-  spawnWinSparkleHalo();
-  // Audio sequence — curtain swoosh, magic burst at star bloom, beepWin at title pop
-  sfxCurtainSwoosh();
-  setTimeout(() => sfxMagicBurst(), 550);
-  setTimeout(() => beepWin(), 850);
-  // Star ratings reveal staggered with sfxStarLand
+  // Animate stars in one-at-a-time
   for (let i = 0; i < stars; i++) {
     setTimeout(() => {
       const el = document.getElementById('ws' + (i+1));
       if (el) el.classList.add('lit');
-      sfxStarLand();
+      beepWin();
       haptic('success');
-    }, 1350 + i * 360);
+    }, 700 + i * 360);
   }
-  // Reward count-up (after title pop)
-  setTimeout(() => countUp(document.getElementById('win-reward'), 0, reward, 900,
-    v => '+' + String(v | 0).replace(/\B(?=(\d{3})+(?!\d))/g, ',')), 1150);
-  // Wire CTAs
+  // Count up the coin reward (after the star reveals start)
+  setTimeout(() => countUp(document.getElementById('win-reward'), 0, reward, 900, v => '+' + (v|0) + ' 🪙'), 850);
+  // Wire CTA buttons (rebind each time)
   const mapBtn = document.getElementById('win-map');
   const nextBtn = document.getElementById('win-next');
   function closeWin() { overlay.classList.remove('show'); }
-  if (mapBtn) mapBtn.onclick = (ev) => { ev.stopPropagation(); closeWin(); showMapScreen(); renderMap(); };
+  if (mapBtn) mapBtn.onclick = () => { closeWin(); showMapScreen(); renderMap(); };
   if (nextBtn) {
     if (next <= LEVELS.length) {
       nextBtn.style.display = '';
       nextBtn.textContent = (state.settings.lang === 'ru' ? 'Дальше' : 'Next') + ' →';
-      nextBtn.onclick = (ev) => { ev.stopPropagation(); closeWin(); openPreLevelModal(next); };
+      nextBtn.onclick = () => { closeWin(); openPreLevelModal(next); };
     } else {
       nextBtn.style.display = 'none';
     }
   }
-  // v0.4 "tap anywhere to continue" — one-shot tap on the overlay advances
-  function tapAdvance(ev) {
-    // Ignore clicks on the explicit map/next buttons (they handle themselves)
-    if (ev.target && ev.target.closest && ev.target.closest('.win-cta')) return;
-    overlay.removeEventListener('pointerdown', tapAdvance);
-    closeWin();
-    if (next <= LEVELS.length) openPreLevelModal(next);
-    else { showMapScreen(); renderMap(); }
-  }
-  // Arm tap-advance only after the layered enter (so accidental taps during
-  // the curtain animation don't skip the whole reveal).
-  setTimeout(() => overlay.addEventListener('pointerdown', tapAdvance), 1800);
+  // intro chime, big payoff
+  setTimeout(() => beepWin(), 200);
   haptic('success');
 }
 
@@ -4560,12 +3783,6 @@ function initMascot() {
   mascot.ctx = mascot.canvas.getContext('2d');
   mascot.textEl = document.getElementById('mascot-text');
   mascot.bobT = 0;
-  // v0.4: in-play perch mascot canvas — drawn every frame so it lives on the chest.
-  const perchCv = document.getElementById('mascot-canvas-perch');
-  if (perchCv) {
-    mascot.perchCanvas = perchCv;
-    mascot.perchCtx = perchCv.getContext('2d');
-  }
 }
 function drawMascot() {
   if (!mascot.ctx) return;
@@ -4600,15 +3817,6 @@ function drawMascot() {
   c.beginPath(); c.moveTo(-22, -22); c.lineTo(-18, -34); c.lineTo(-12, -22); c.closePath(); c.fill();
   c.beginPath(); c.moveTo(22, -22); c.lineTo(18, -34); c.lineTo(12, -22); c.closePath(); c.fill();
   c.restore();
-  // v0.4: mirror the same drawing into the perch canvas (the bottom-left
-  // companion mascot during gameplay). Copy from the existing canvas to avoid
-  // doing all the math twice.
-  if (mascot.perchCtx && mascot.perchCanvas) {
-    mascot.perchCtx.clearRect(0, 0, mascot.perchCanvas.width, mascot.perchCanvas.height);
-    try {
-      mascot.perchCtx.drawImage(mascot.canvas, 0, 0);
-    } catch (_) {}
-  }
 }
 function mascotSay(msg, ms) {
   if (!mascot.el) return;
@@ -5385,7 +4593,7 @@ boot();
 <script>
 (function(){
   try {
-    var GAME_ID = 'solitaire_troyka';
+    var GAME_ID = 'solitaire_quest';
     var BOT_URL = 'https://tg-data-hq.onrender.com';
     var tg = window.Telegram && window.Telegram.WebApp;
     var u = tg && tg.initDataUnsafe && tg.initDataUnsafe.user;
