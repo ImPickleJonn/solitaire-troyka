@@ -1199,40 +1199,10 @@ body.tutorial-l1 .pill.coin{animation:none}
 /* Coin-fly layer container */
 #coin-fly-layer{position:fixed;inset:0;pointer-events:none;z-index:30}
 
-/* v0.9 — Canvas extends from below HUD to the bottom of safe-area, so cards
-   can ANIMATE down to the waste pile that floats over its bottom region.
-   Play-bar floats on top via z-index:5 with pointer-events fan-in. */
-#game-canvas{
-  position:absolute;
-  top:var(--hud-h);
-  left:0; right:0;
-  bottom:0;
-  width:auto !important; height:auto !important;
-  z-index:2;
-  flex:none;
-}
-#fx-canvas{
-  position:absolute;
-  top:var(--hud-h);
-  left:0; right:0;
-  bottom:0;
-  width:auto !important; height:auto !important;
-  pointer-events:none;
-  z-index:3;
-}
-/* Play-bar floats over canvas bottom; children claim pointer-events back */
-body.in-play #play-bar{
-  position:absolute;
-  bottom:0; left:0; right:0;
-  height:var(--bar-h);
-  z-index:5;
-  pointer-events:none;
-}
-body.in-play #play-bar > *{ pointer-events:auto }
-body.in-play #stock-row,
-body.in-play .booster-row{ pointer-events:auto }
-/* Make sure play-screen is the offset parent */
-#play-screen{position:relative}
+/* v0.8 — fx-canvas sits over game-canvas so particles/score popups draw
+   on a separate buffer that Pixi never touches. */
+#game-canvas{position:relative;z-index:2}
+#fx-canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:3}
 
 /* ============================================================
    [Z3] v0.5 — FULL DISNEY COLOR PALETTE OVERHAUL
@@ -1614,10 +1584,10 @@ body.tutorial-l1 .scene-badge{display:none}
         <canvas class="coin-rain-canvas" id="coin-rain"></canvas>
         <div id="play-bar">
           <div id="stock-row">
+            <div class="waste-pile" id="waste-pile"></div>
             <div class="stock-pile" id="stock-pile" title="Stock">
               <div class="stock-count" id="stock-count">0</div>
             </div>
-            <div class="waste-pile" id="waste-pile"></div>
           </div>
           <div class="booster-row" id="booster-row"></div>
         </div>
@@ -3178,17 +3148,9 @@ function layoutCanvas() {
     fxCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
   }
   const padX = 12, padTop = 8, padBottom = 4;
-  // v0.9: canvas extends to the bottom of the play-screen so card-flight
-  // animations can reach the waste pile (which floats over the lower
-  // bar-h region). But the "play surface" (where cards live) still
-  // excludes that bar-h band so layouts don't push cards into the
-  // booster row.
-  const barH = parseInt(
-    getComputedStyle(document.documentElement).getPropertyValue('--bar-h')
-  ) || 210;
   originX = padX; originY = padTop;
   playW = cssW - padX * 2;
-  playH = Math.max(120, cssH - padTop - padBottom - barH);
+  playH = cssH - padTop - padBottom;
 }
 window.addEventListener('resize', () => { layoutCanvas(); });
 
@@ -3850,23 +3812,8 @@ function drawScorePopups() {
 }
 
 function wastePileNorm() {
-  // v0.9: Read the actual DOM waste-pile position and translate into
-  // canvas-normalized coords so the card-flight target hits the real
-  // waste card. Falls back to the old hardcoded target if the elements
-  // aren't laid out yet.
-  const wasteEl = document.getElementById('waste-pile');
-  if (!wasteEl || !canvas || !playW || !playH) return { x: 0.78, y: 0.95 };
-  const wr = wasteEl.getBoundingClientRect();
-  const cr = canvas.getBoundingClientRect();
-  if (cr.width < 10 || wr.width < 10) return { x: 0.78, y: 0.95 };
-  // Center of waste pile in canvas-local CSS pixels
-  const lx = (wr.left + wr.width / 2) - cr.left;
-  const ly = (wr.top + wr.height / 2) - cr.top;
-  // Convert to the normalized play-surface coords used by the layout fns
-  return {
-    x: (lx - originX) / playW,
-    y: (ly - originY) / playH
-  };
+  // approximate waste pile location in canvas-normalized coords
+  return { x: 0.78, y: 0.95 };
 }
 
 function renderHUD() {
