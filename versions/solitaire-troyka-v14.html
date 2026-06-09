@@ -3,78 +3,49 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no"/>
-<meta name="theme-color" content="#ffd84a"/>
+<meta name="theme-color" content="#1a0b2e"/>
 <title>Solitaire Troyka</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700;900&family=Baloo+2:wght@600;800&family=Lilita+One&display=swap" rel="stylesheet">
-<!-- v0.8: Pixi.js v8 async loader with /vendor fallback -->
-<script>
-window.__pixiReady = new Promise(function(res, rej){
-  var s = document.createElement('script');
-  s.src = 'https://cdn.jsdelivr.net/npm/pixi.js@8.6.6/dist/pixi.min.js';
-  s.async = true; s.crossOrigin = 'anonymous';
-  s.onload = function(){ res(window.PIXI); };
-  s.onerror = function(){
-    var f = document.createElement('script');
-    f.src = '/vendor/pixi-8.6.6.min.js';
-    f.onload = function(){ res(window.PIXI); };
-    f.onerror = rej;
-    document.head.appendChild(f);
-  };
-  document.head.appendChild(s);
-});
-</script>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Lilita+One&display=swap" rel="stylesheet">
 <style>
-/* v0.8: Universal kawaii font rule — beats every legacy explicit family declaration in one shot */
-*{font-family:'Fredoka','Baloo 2',-apple-system,BlinkMacSystemFont,'SF Pro Display','Segoe UI',system-ui,sans-serif!important;-webkit-tap-highlight-color:transparent}
 /* =========================================================
    Solitaire Troyka — single-file styles
    ========================================================= */
 :root{
-  --bg-0:#fef6e4;
-  --bg-1:#fff3dc;
-  --bg-2:#ffe7f0;
-  --accent:#ffd84a;
-  --accent-2:#ff6e9c;
-  --accent-3:#a3e060;
-  /* v0.8 kawaii palette (Dumpling-Drop-aligned) — chocolate ink, cream paper, golden buttons */
-  --ink:#5a3a18;
-  --ink-deep:#4a2412;
-  --ink-soft:#a85a18;
-  --ink-dim:rgba(74,36,18,.45);
-  --paper:#fff7e6;
-  --gold:#ffd84a;
-  --gold-deep:#d68a18;
-  --bg-mid:#ff9e5e;
-  --candy-pink:#ff6e9c;
-  --candy-purple:#a259ff;
-  --candy-green:#a3e060;
-  --btn-top:#ffe896;
-  --btn-mid:#ffd24a;
-  --btn-low:#f5b528;
-  --btn-bot:#e09a1e;
-  --btn-shadow:#9a5e14;
-  --btn-border:#6e4310;
-  --card-face:#ffffff;
-  --card-back-a:#1e8be5;
-  --card-back-b:#3aa5ee;
+  --bg-0:#1a0b2e;
+  --bg-1:#2b1656;
+  --bg-2:#3a1d6a;
+  --accent:#ffd166;
+  --accent-2:#ef476f;
+  --accent-3:#06d6a0;
+  --ink:#fff;
+  --ink-soft:rgba(255,255,255,.72);
+  --ink-dim:rgba(255,255,255,.45);
+  --card-face:#fdfaf3;
+  --card-back-a:#1e3a8a;
+  --card-back-b:#2da9e8;
   --tab-h:64px;
   --safe-top:0px;
   --safe-bottom:0px;
   --hud-h:56px;
-  --bar-h:210px; /* v0.8 — was 72px. Now holds stock-row + booster-row stacked */
-  --pill-bg:#fff7e6;
-  --pill-bg-strong:#ffe2a8;
-  --shadow-1:0 4px 14px rgba(74,36,18,.32);
-  --shadow-2:0 10px 30px rgba(74,36,18,.45);
-  --vignette:rgba(74,36,18,.40);
-  --disney-navy:#1e2a5a;
-  --disney-red:#c8243a;
-  --popup-green:#a3e060;
-  --tut-red:#ff6e9c;
-  --tut-blue:#4ec5ff;
+  --bar-h:72px;
+  --pill-bg:rgba(255,255,255,.08);
+  --pill-bg-strong:rgba(255,255,255,.16);
+  --shadow-1:0 4px 14px rgba(0,0,0,.35);
+  --shadow-2:0 10px 30px rgba(0,0,0,.5);
+  /* Disney palette (v0.4 overhaul) */
+  --scene-warm-1:#6a3a1f;
+  --scene-warm-2:#c47a3a;
+  --scene-warm-3:#f1b87a;
+  --scene-warm-4:#d18b4a;
+  --vignette:rgba(20,8,50,.55);
+  --disney-navy:#1e3a8a;
+  --disney-red:#c92f4d;
+  --popup-green:#7CD86F;
+  --tut-red:#ff5a5a;
+  --tut-blue:#5ab8ff;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
 html,body{margin:0;padding:0;height:100%;overflow:hidden;background:var(--bg-0);color:var(--ink);font-family:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;-webkit-font-smoothing:antialiased;font-feature-settings:"tnum"}
@@ -268,26 +239,13 @@ main{flex:1;position:relative;overflow:hidden}
   touch-action:none;
   position:relative;z-index:2;   /* v0.5: must paint ABOVE .scene-bg */
 }
-/* v0.8: Two-row stacked layout — stock+waste row on top, boosters below.
-   Container is column-flex; --bar-h is bumped to 210px in :root. */
 #play-bar{
   height:var(--bar-h);min-height:var(--bar-h);
-  display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;
-  gap:10px;
-  padding:10px 12px calc(12px + var(--safe-bottom));
-  box-sizing:border-box;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:6px 12px 14px;gap:10px;
   position:relative;
 }
-#stock-row{
-  display:flex;flex-direction:row;
-  align-items:flex-end;justify-content:center;
-  gap:18px;width:100%;height:130px;
-  position:relative;z-index:1;
-}
-.booster-row{
-  display:flex;flex-direction:row;align-items:center;justify-content:center;
-  gap:8px;width:100%;
-}
+.booster-row{display:flex;gap:8px}
 .booster{
   position:relative;
   width:48px;height:54px;border-radius:14px;
@@ -311,38 +269,38 @@ main{flex:1;position:relative;overflow:hidden}
    so the player feels the depth. Each edge is ~3px wider than the last. */
 .stock-pile{
   position:relative;width:140px;height:130px;
-  cursor:pointer;flex:0 0 auto;
+  cursor:pointer;
 }
 .stock-pile .stock-empty{
-  position:absolute;left:0;top:0;width:84px;height:118px;
+  position:absolute;left:0;top:6px;width:84px;height:118px;
   border-radius:11px;
-  border:2px dashed rgba(74,36,18,.45);
-  background:rgba(255,255,255,.30);
+  border:2px dashed rgba(255,255,255,.35);
+  background:rgba(0,0,0,.10);
 }
 .stock-card-back{
-  position:absolute;top:0;width:84px;height:118px;border-radius:11px;
+  position:absolute;top:6px;width:84px;height:118px;border-radius:11px;
   background:#fff;
   /* white border baked into the bg by drawing only the inner royal panel */
-  box-shadow:0 2px 0 rgba(74,36,18,.30), 0 3px 6px rgba(74,36,18,.18);
+  box-shadow:0 2px 0 rgba(0,0,0,.30), 0 3px 6px rgba(0,0,0,.18);
   border:2px solid #fff;
   transition:transform .18s cubic-bezier(.34,1.56,.64,1);
 }
 .stock-card-back::before{
   content:'';position:absolute;inset:2px;border-radius:9px;
-  background:#1e8be5; /* v0.8 cobalt — matches Pixi card-back palette */
+  background:#1e3a8a; /* royal blue field */
 }
 .stock-card-back::after{
   content:'';position:absolute;inset:6px;border-radius:6px;
-  background:#3aa5ee;
+  background:#2da9e8;  /* lighter inner panel */
   box-shadow:inset 0 0 0 1px rgba(0,0,0,.12);
 }
 .stock-card-back.top{
-  box-shadow:0 4px 0 rgba(74,36,18,.40), 0 8px 14px rgba(74,36,18,.30);
+  box-shadow:0 4px 0 rgba(0,0,0,.40), 0 8px 14px rgba(0,0,0,.30);
 }
 .stock-card-back.top::after{
   background:
     radial-gradient(circle at 50% 55%, rgba(255,247,194,.55) 0%, transparent 35%),
-    #3aa5ee;
+    #2da9e8;
 }
 .stock-card-back.top .star{
   position:absolute;inset:0;display:grid;place-items:center;
@@ -362,7 +320,7 @@ main{flex:1;position:relative;overflow:hidden}
   display:none;
 }
 .stock-pile.low .stock-count{display:block}
-.waste-pile{position:relative;width:84px;height:118px;filter:drop-shadow(0 0 12px rgba(255,216,74,.35));flex:0 0 auto}
+.waste-pile{position:relative;width:84px;height:118px;filter:drop-shadow(0 0 12px rgba(255,209,102,.25))}
 .combo-callout{
   position:absolute;left:50%;top:38%;
   transform:translate(-50%,-50%) scale(.4);opacity:0;
@@ -1199,11 +1157,6 @@ body.tutorial-l1 .pill.coin{animation:none}
 /* Coin-fly layer container */
 #coin-fly-layer{position:fixed;inset:0;pointer-events:none;z-index:30}
 
-/* v0.8 — fx-canvas sits over game-canvas so particles/score popups draw
-   on a separate buffer that Pixi never touches. */
-#game-canvas{position:relative;z-index:2}
-#fx-canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:3}
-
 /* ============================================================
    [Z3] v0.5 — FULL DISNEY COLOR PALETTE OVERHAUL
    Cream + gold + warm-red. Replaces the cool dark-purple chrome
@@ -1213,10 +1166,10 @@ body.tutorial-l1 .pill.coin{animation:none}
 /* In-play, swap the entire #app background to warm cream-to-amber
    so the scene-bg blends seamlessly and never shows dark void */
 body.in-play #app{
-  /* v0.8: kawaii warm-bright base — cream → peach → pink (Dumpling-Drop palette).
-     The painted scene-bg layers ride on TOP of this with vignette + props. */
-  background:linear-gradient(180deg, #fef6e4 0%, #fff3dc 40%, #ffe7f0 100%);
-  transition:background .5s ease;
+  /* v0.7: match the new dark warm-coral scene so any transparent area of
+     scene-bg never reveals dark void or cream mismatch */
+  background:
+    radial-gradient(140% 80% at 50% 0%, #ff8a4a 0%, #d04a36 28%, #a02f48 55%, #5a2a45 100%);
 }
 body.in-play .topbar{
   background:linear-gradient(180deg, rgba(106,58,31,.0) 0%, rgba(106,58,31,.0) 100%);
@@ -1226,22 +1179,22 @@ body.in-play .topbar{
    dusty mauve floor with perspective, deep maroon vignette at corners. */
 body.in-play .scene-bg{z-index:0}
 body.in-play .scene-floor{
-  /* v0.8 kawaii scene — yellow sunlight top → peach → pink mat. Dumpling-Drop feel. */
   background:
-    /* warm sunlight glow */
-    radial-gradient(70% 30% at 50% 22%, rgba(255,236,140,.55) 0%, transparent 70%),
-    /* sky → peach → pink */
+    /* horizon glow — soft warm light */
+    radial-gradient(60% 25% at 50% 38%, rgba(255,224,160,.55) 0%, transparent 75%),
+    /* wallpaper (top 45%) → mauve floor (bottom 55%) */
     linear-gradient(180deg,
-      #ffe896 0%,    /* sunshine top */
-      #ffd24a 18%,   /* gold band */
-      #ffb072 38%,   /* peach */
-      #ff8aa8 55%,   /* candy pink horizon */
-      #ffb0c8 78%,   /* soft pink floor */
-      #ffd2dc 100%); /* warm cream-pink near */
+      #ff8a4a 0%,    /* warm peach top */
+      #d04a36 22%,   /* deep coral */
+      #a02f48 42%,   /* maroon split */
+      #884060 48%,   /* horizon line */
+      #b56b8a 55%,   /* mauve floor near */
+      #94506e 75%,
+      #5a2a45 100%); /* deep magenta horizon */
 }
 body.in-play .scene-vignette{
   background:
-    radial-gradient(85% 65% at 50% 50%, transparent 40%, rgba(74,36,18,.30) 100%);
+    radial-gradient(80% 60% at 50% 60%, transparent 30%, rgba(40,10,30,.65) 100%);
   mix-blend-mode:multiply;
 }
 
@@ -1320,14 +1273,11 @@ body.in-play .booster{
 body.in-play .booster svg{display:block}
 body.in-play .booster.empty svg{opacity:.45;filter:grayscale(.6)}
 body.in-play .booster-row{
-  /* v0.8: warm kawaii wood-mat — caramel gradient, soft brown border, only as wide as needed */
-  background:linear-gradient(180deg,#b97a3a 0%, #8a4a18 100%);
-  padding:8px 10px;border-radius:20px;
-  border:3px solid #4a2412;
-  box-shadow:0 4px 0 #4a2412, 0 10px 18px rgba(74,36,18,.45), inset 0 2px 0 rgba(255,236,180,.30);
-  display:flex;gap:8px;
-  margin:0 auto;width:max-content;max-width:calc(100% - 8px);
-  justify-content:center;align-items:center;
+  background:linear-gradient(180deg,#a04e2a,#6a2818);
+  padding:6px 8px;border-radius:18px;
+  border:2px solid #3a1100;
+  box-shadow:0 4px 0 #3a1100, 0 8px 14px rgba(0,0,0,.45), inset 0 2px 0 rgba(255,255,255,.15);
+  display:flex;gap:6px;
 }
 body.in-play .booster .count{
   background:#c92f4d;
@@ -1354,12 +1304,9 @@ body.in-play #play-bar{
     inset 0 -8px 0 rgba(0,0,0,.18);
 }
 body.in-play #play-bar::before{
-  /* v0.8: anchor the shadow ellipse under the stock-row (which sits ABOVE the booster-row) */
-  content:'';position:absolute;left:50%;
-  bottom:calc(78px + var(--safe-bottom));
-  transform:translateX(-50%);
+  content:'';position:absolute;left:50%;bottom:10px;transform:translateX(-50%);
   width:260px;height:38px;
-  background:radial-gradient(ellipse, rgba(74,36,18,.35) 0%, transparent 70%);
+  background:radial-gradient(ellipse, rgba(0,0,0,.55) 0%, transparent 70%);
   pointer-events:none;z-index:0;
 }
 body.in-play .waste-pile{
@@ -1580,16 +1527,13 @@ body.tutorial-l1 .scene-badge{display:none}
           </div>
         </div>
         <canvas id="game-canvas"></canvas>
-        <canvas id="fx-canvas"></canvas>
         <canvas class="coin-rain-canvas" id="coin-rain"></canvas>
         <div id="play-bar">
-          <div id="stock-row">
-            <div class="waste-pile" id="waste-pile"></div>
-            <div class="stock-pile" id="stock-pile" title="Stock">
-              <div class="stock-count" id="stock-count">0</div>
-            </div>
-          </div>
           <div class="booster-row" id="booster-row"></div>
+          <div class="waste-pile" id="waste-pile"></div>
+          <div class="stock-pile" id="stock-pile" title="Stock">
+            <div class="stock-count" id="stock-count">0</div>
+          </div>
         </div>
         <div class="combo-callout" id="combo-callout"></div>
       </div>
@@ -3113,42 +3057,20 @@ function renderBoosterRow() {
 /* ============== [JS-10] RENDER (CANVAS) ============== */
 const canvas = document.getElementById('game-canvas');
 const ctx = canvas.getContext('2d');
-const fxCanvas = document.getElementById('fx-canvas');
-const fxCtx = fxCanvas ? fxCanvas.getContext('2d') : ctx;
 let dpr = window.devicePixelRatio || 1;
 let cssW = 0, cssH = 0;
 let originX = 0, originY = 0, playW = 0, playH = 0;
-
-// v0.8 Pixi globals — set true once initPixi succeeds
-let pixiApp = null, pixiStage = null;
-let layerGhosts = null, layerCards = null, layerFx = null;
-let pixiOK = false;
-const textureCache = new Map();      // frontKey → PIXI.Texture
-const cardSpriteByCardId = new Map();// card.id → CardSprite container
-let _backTex = null;
-
 function layoutCanvas() {
   const rect = canvas.getBoundingClientRect();
   dpr = window.devicePixelRatio || 1;
   cssW = rect.width; cssH = rect.height;
-  // Pixi owns the game-canvas backing store when active
-  if (!pixiOK) {
-    canvas.width = Math.floor(cssW * dpr);
-    canvas.height = Math.floor(cssH * dpr);
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  } else if (pixiApp && pixiApp.renderer) {
-    pixiApp.renderer.resize(cssW, cssH);
-  }
-  // FX canvas is always Canvas2D for particles/popups (Pixi doesn't touch it)
-  if (fxCanvas && fxCanvas !== canvas) {
-    fxCanvas.width = Math.floor(cssW * dpr);
-    fxCanvas.height = Math.floor(cssH * dpr);
-    fxCanvas.style.width = cssW + 'px';
-    fxCanvas.style.height = cssH + 'px';
-    fxCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  }
+  canvas.width = Math.floor(cssW * dpr);
+  canvas.height = Math.floor(cssH * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  // play surface coords: pad 16px each side, top, leaves space at bottom for waste
   const padX = 12, padTop = 8, padBottom = 4;
-  originX = padX; originY = padTop;
+  originX = padX;
+  originY = padTop;
   playW = cssW - padX * 2;
   playH = cssH - padTop - padBottom;
 }
@@ -3338,242 +3260,7 @@ function drawCardBack(c, x, y, w, h, scaleX) {
   c.restore();
 }
 
-/* ====================================================================
-   [JS-10.PIXI] v0.8 — Pixi v8 card rendering port
-   ==================================================================== */
-
-async function initPixi() {
-  if (!window.__pixiReady) { pixiOK = false; return; }
-  try {
-    const PIXI = await window.__pixiReady;
-    if (document.fonts && document.fonts.ready) await document.fonts.ready;
-    pixiApp = new PIXI.Application();
-    await pixiApp.init({
-      canvas: document.getElementById('game-canvas'),
-      width: cssW || 360,
-      height: cssH || 600,
-      resolution: window.devicePixelRatio || 1,
-      autoDensity: true,
-      backgroundAlpha: 0,
-      antialias: true,
-      powerPreference: 'high-performance',
-      preference: 'webgl',
-      eventMode: 'none'
-    });
-    pixiStage = pixiApp.stage;
-    layerGhosts = new PIXI.Container();
-    layerCards = new PIXI.Container();
-    layerFx = new PIXI.Container();
-    pixiStage.addChild(layerGhosts, layerCards, layerFx);
-    pixiApp.ticker.stop(); // we drive rendering from frame()
-    pixiOK = true;
-    layoutCanvas(); // recompute now that Pixi owns canvas
-    console.log('[Pixi] initialized v8');
-  } catch (e) {
-    console.warn('[Pixi] init failed, falling back to Canvas2D', e);
-    pixiOK = false;
-  }
-}
-// kick off init after the rest of the boot sets up cssW/cssH
-setTimeout(() => initPixi(), 80);
-
-function easeInOutCubicTween(t){ return t<0.5 ? 4*t*t*t : 1 - Math.pow(-2*t+2,3)/2; }
-function easeOutBackTween(t){ const c1=1.70158, c3=c1+1; return 1 + c3*Math.pow(t-1,3) + c1*Math.pow(t-1,2); }
-
-function frontTextureKey(card) {
-  return card.rank + '|' + card.suit + '|' + (card.type||'') + '|' +
-    (card.wild?'w':'') + '|' + (card.lockCount|0);
-}
-function buildCardBackContainer() {
-  const PIXI = window.PIXI;
-  const W = CARD_W, H = CARD_H, R = CARD_R || 6;
-  const c = new PIXI.Container();
-  const shadow = new PIXI.Graphics()
-    .roundRect(0, 5, W, H, R).fill({color:0x501437, alpha:0.30})
-    .roundRect(0, 2, W, H, R).fill({color:0x140820, alpha:0.25});
-  const outer = new PIXI.Graphics().roundRect(0, 0, W, H, R).fill(0xffffff);
-  const field = new PIXI.Graphics().roundRect(3, 3, W-6, H-6, R-1).fill(0x1e8be5);
-  const inset = new PIXI.Graphics().roundRect(6, 6, W-12, H-12, R-2).fill(0x3aa5ee)
-    .stroke({width:1, color:0x000000, alpha:0.25});
-  const cx = W/2, cy = H/2, mr = Math.min(W,H)*0.13;
-  const mickey = new PIXI.Graphics()
-    .circle(cx, cy + mr*0.25, mr).fill({color:0xffffff, alpha:0.18})
-    .circle(cx - mr*0.85, cy - mr*0.70, mr*0.65).fill({color:0xffffff, alpha:0.18})
-    .circle(cx + mr*0.85, cy - mr*0.70, mr*0.65).fill({color:0xffffff, alpha:0.18});
-  c.addChild(shadow, outer, field, inset, mickey);
-  return c;
-}
-function buildCardFrontContainer(card) {
-  const PIXI = window.PIXI;
-  const W = CARD_W, H = CARD_H, R = CARD_R || 6;
-  const c = new PIXI.Container();
-  const shadow = new PIXI.Graphics()
-    .roundRect(0, 5, W, H, R).fill({color:0x501437, alpha:0.30})
-    .roundRect(0, 2, W, H, R).fill({color:0x140820, alpha:0.25});
-  const body = new PIXI.Graphics().roundRect(0, 0, W, H, R).fill(0xffffff);
-  // clip + cobalt band on top 22%
-  const bandClip = new PIXI.Graphics().roundRect(0, 0, W, H, R).fill(0xffffff);
-  const band = new PIXI.Graphics()
-    .rect(0, 0, W, H * 0.22).fill(0x1e8be5)
-    .rect(0, H * 0.22 - 1, W, 1).fill({color:0x000000, alpha:0.10});
-  band.mask = bandClip;
-  c.addChild(shadow, body, bandClip, band);
-  const rank = RANK_LABEL[card.rank];
-  const suit = SUITS[card.suit % 4];
-  const isRed = (suit === '♥' || suit === '♦');
-  // BIG center rank
-  const big = new PIXI.Text({
-    text: rank,
-    style: { fontFamily: 'Fredoka, Baloo 2, sans-serif', fontWeight: '900',
-             fontSize: Math.floor(H * 0.55),
-             fill: isRed ? 0xc8243a : 0x1e2a5a, align: 'center' }
-  });
-  big.anchor.set(0.5);
-  big.position.set(W/2, H * 0.62);
-  c.addChild(big);
-  // tiny corner rank+suit
-  const cornerSize = Math.floor(H * 0.14);
-  const cs = { fontFamily: 'Fredoka, sans-serif', fontWeight: '900', fontSize: cornerSize, fill: 0xffffff };
-  const tlR = new PIXI.Text({ text: rank, style: cs }); tlR.position.set(4, 2); c.addChild(tlR);
-  const tlS = new PIXI.Text({ text: suit, style: { ...cs, fontSize: Math.floor(H*0.10) } });
-  tlS.position.set(5, 2 + cornerSize); c.addChild(tlS);
-  const trR = new PIXI.Text({ text: rank, style: cs }); trR.anchor.set(1,0); trR.position.set(W-4, 2); c.addChild(trR);
-  const trS = new PIXI.Text({ text: suit, style: { ...cs, fontSize: Math.floor(H*0.10) } });
-  trS.anchor.set(1,0); trS.position.set(W-5, 2 + cornerSize); c.addChild(trS);
-  // wild overlay
-  if (card.wild) {
-    const wo = new PIXI.Graphics().roundRect(0,0,W,H,R)
-      .fill({color:0xffd84a, alpha:0.18})
-      .stroke({width:3, color:0xa259ff, alpha:0.7});
-    c.addChild(wo);
-  }
-  // mult / treasure / memory / locked overlays
-  if (card.type === 'mult' && card.multValue) {
-    const m = new PIXI.Text({
-      text: '×' + card.multValue,
-      style:{ fontFamily:'Fredoka', fontWeight:'900', fontSize:Math.floor(H*0.18), fill:0xa259ff }
-    });
-    m.position.set(4, H - Math.floor(H*0.22)); c.addChild(m);
-  }
-  if (card.type === 'treasure') {
-    const t = new PIXI.Graphics().circle(W-12, H-12, 8)
-      .fill(0xffd166).stroke({width:1.5, color:0x7a3e0f});
-    c.addChild(t);
-  }
-  if (card.type === 'locked' && card.lockCount > 0) {
-    const lk = new PIXI.Graphics().roundRect(0,0,W,H,R).fill({color:0x000000, alpha:0.45});
-    c.addChild(lk);
-  }
-  return c;
-}
-function getOrBuildBackTexture() {
-  if (_backTex || !pixiApp) return _backTex || null;
-  const c = buildCardBackContainer();
-  _backTex = pixiApp.renderer.generateTexture({ target: c, resolution: window.devicePixelRatio || 1 });
-  c.destroy({ children: true });
-  return _backTex;
-}
-function getOrBuildFrontTexture(card) {
-  if (!pixiApp) return null;
-  const k = frontTextureKey(card);
-  if (textureCache.has(k)) return textureCache.get(k);
-  const c = buildCardFrontContainer(card);
-  const tex = pixiApp.renderer.generateTexture({ target: c, resolution: window.devicePixelRatio || 1 });
-  c.destroy({ children: true });
-  textureCache.set(k, tex);
-  return tex;
-}
-function makeCardSprite(card) {
-  const PIXI = window.PIXI;
-  const sp = new PIXI.Container();
-  sp.cardId = card.id; sp._card = card;
-  sp.pivot.set(CARD_W/2, CARD_H/2);
-  const halo = new PIXI.Graphics()
-    .roundRect(-3, -3, CARD_W+6, CARD_H+6, (CARD_R||6)+3)
-    .stroke({ width:3, color:0xffc54a, alpha:1 });
-  halo.visible = false;
-  const back  = new PIXI.Sprite(getOrBuildBackTexture());
-  const front = new PIXI.Sprite(getOrBuildFrontTexture(card));
-  sp.addChild(halo, back, front);
-  sp.halo = halo; sp.back = back; sp.front = front;
-  sp.front.visible = !card.faceDown;
-  sp.back.visible  = card.faceDown;
-  sp._refreshFront = function() { sp.front.texture = getOrBuildFrontTexture(card); };
-  return sp;
-}
-function updateCardSpriteTransform(sp, card, now) {
-  const pos = normToScreen(card.x, card.y);
-  sp.position.set(pos.x + CARD_W/2, pos.y + CARD_H/2);
-  sp.scale.set(1); sp.rotation = 0; sp.skew.y = 0;
-  sp.alpha = (card.cleared && !card.anim) ? 0 : 1;
-  if (card.anim) {
-    if (card.anim.kind === 'toWaste') {
-      card.anim.t = (card.anim.t || 0) + 16;
-      const p = Math.min(1, card.anim.t / (card.anim.dur || 520));
-      const e = easeOutBackTween(p), u = 1 - e;
-      const target = wastePileNorm();
-      const fx = card.anim.fromX, fy = card.anim.fromY;
-      const cx = (fx + target.x) / 2;
-      const cy = Math.min(fy, target.y) - 0.25;
-      const nx = u*u*fx + 2*u*e*cx + e*e*target.x;
-      const ny = u*u*fy + 2*u*e*cy + e*e*target.y;
-      const screen = normToScreen(nx, ny);
-      sp.position.set(screen.x + CARD_W/2, screen.y + CARD_H/2);
-      sp.scale.set(1 + Math.sin(p*Math.PI) * 0.18);
-      sp.rotation = Math.sin(p*Math.PI) * 0.42 * (target.x > fx ? 1 : -1);
-      if (p > 0.85) sp.alpha = 1 - ((p - 0.85)/0.15) * 0.4;
-      if (p >= 1) card.anim = null;
-      return;
-    }
-    if (card.anim.kind === 'flip') {
-      card.anim.t = (card.anim.t || 0) + 16;
-      const p = Math.min(1, card.anim.t / (card.anim.dur || 300));
-      if (p < 0.5) {
-        const q = p / 0.5;
-        sp.scale.x = 1 - easeInOutCubicTween(q);
-        sp.skew.y = easeInOutCubicTween(q) * 0.18;
-      } else {
-        sp.front.visible = !card.faceDown;
-        sp.back.visible  = card.faceDown;
-        const q = (p - 0.5) / 0.5;
-        sp.scale.x = easeInOutCubicTween(q);
-        sp.skew.y = (1 - easeInOutCubicTween(q)) * 0.18;
-      }
-      if (p >= 1) { card.anim = null; sp.scale.x = 1; sp.skew.y = 0; }
-      return;
-    }
-    if (card.anim.kind === 'shuffle') {
-      card.anim.t = (card.anim.t || 0) + 16;
-      const p = Math.min(1, card.anim.t / (card.anim.dur || 360));
-      sp.position.y -= Math.sin(p * Math.PI) * 12;
-      if (p >= 1) card.anim = null;
-    }
-  }
-  // Deal-out animation overlay
-  if (card._dealAnim) {
-    card._dealAnim.t = (card._dealAnim.t || 0) + 16;
-    const elapsed = card._dealAnim.t - (card._dealAnim.delay || 0);
-    if (elapsed <= 0) { sp.scale.set(0); return; }
-    const p = Math.min(1, elapsed / (card._dealAnim.dur || 280));
-    const e = easeInOutCubicTween(p);
-    sp.scale.set(e, e);
-    if (p >= 1) card._dealAnim = null;
-  }
-  // Playable card halo pulse
-  const playable = (typeof isPlayable === 'function') &&
-    isPlayable(card, game) &&
-    !card.faceDown && !card.cleared &&
-    (Card.isMatch(card.rank, game.waste.rank) || (game.waste && game.waste.wild));
-  if (playable) {
-    const pulse = 0.5 + Math.sin(now * 0.006) * 0.5;
-    sp.halo.visible = true;
-    sp.halo.alpha = 0.55 + pulse * 0.45;
-    sp.halo.scale.set(1 + pulse * 0.04);
-  } else {
-    sp.halo.visible = false;
-  }
-}
-function drawCards_canvas2d_fallback() {
+function drawCards() {
   // v0.4: Empty-slot ghost pre-pass — soft brown rounded-rect at each cleared
   // bottom-row card's position so the player can track where things were.
   const now = performance.now();
@@ -3683,41 +3370,6 @@ function drawCards_canvas2d_fallback() {
       ctx.restore();
     }
   }
-}
-// v0.8: NEW drawCards() — uses Pixi when available, falls back to Canvas2D.
-function drawCards() {
-  if (!pixiOK || !pixiApp || !window.PIXI) return drawCards_canvas2d_fallback();
-  const now = performance.now();
-  const liveIds = new Set();
-  for (const card of game.cards) {
-    liveIds.add(card.id);
-    let sp = cardSpriteByCardId.get(card.id);
-    if (!sp) {
-      sp = makeCardSprite(card);
-      cardSpriteByCardId.set(card.id, sp);
-      layerCards.addChild(sp);
-    } else {
-      // If face state changed without a flip anim, reflect it
-      if (sp._card !== card) { sp._card = card; sp._refreshFront(); }
-      if (!card.anim || card.anim.kind !== 'flip') {
-        sp.front.visible = !card.faceDown;
-        sp.back.visible  = card.faceDown;
-      }
-    }
-    updateCardSpriteTransform(sp, card, now);
-  }
-  // Dispose orphans
-  for (const [id, sp] of cardSpriteByCardId) {
-    if (!liveIds.has(id)) {
-      try { layerCards.removeChild(sp); sp.destroy({ children: true, texture: false }); }
-      catch (_) {}
-      cardSpriteByCardId.delete(id);
-    }
-  }
-  // Depth sort
-  layerCards.children.sort((a, b) =>
-    (a._card.layer - b._card.layer) || (a._card.y - b._card.y));
-  pixiApp.renderer.render(pixiApp.stage);
 }
 function isCardCovered(card) {
   if (!card.blockers || !card.blockers.length) return false;
@@ -4413,98 +4065,19 @@ function beepLose() {
 }
 
 /* ============== [JS-13] FRAME LOOP ============== */
-// v0.8: When Pixi owns game-canvas, particles/score-popups draw onto fx-canvas
-// via fxCtx. When Pixi is off, we redirect fxCtx to game-canvas's ctx so the
-// fallback Canvas2D path keeps working without per-call branching.
 function frame() {
-  if (pixiOK) {
-    // FX canvas needs to be cleared each frame
-    if (fxCanvas && fxCanvas !== canvas) {
-      fxCtx.clearRect(0, 0, cssW, cssH);
-    }
-    drawCards();                     // Pixi handles bg/cards
-    _withFxCtx(drawParticles);
-    _withFxCtx(drawScorePopups);
-  } else {
-    ctx.clearRect(0, 0, cssW, cssH);
-    drawBg();
-    drawCards();
-    drawParticles();
-    drawScorePopups();
-  }
+  if (canvas.width !== Math.floor(cssW * dpr)) { /* nothing */ }
+  ctx.clearRect(0, 0, cssW, cssH);
+  drawBg();
+  drawCards();
+  drawParticles();
+  drawScorePopups();
+  // v0.4: draw the mascot when its speech bubble is visible OR when in-play (perched bottom-left)
   if (typeof drawMascot === 'function' && (
         (mascot.el && mascot.el.classList.contains('show')) ||
         document.body.classList.contains('in-play')
       )) drawMascot();
   requestAnimationFrame(frame);
-}
-// Temporarily swap the canvas2d `ctx` used by drawParticles/drawScorePopups
-// to point at the FX canvas while Pixi controls game-canvas. We redefine
-// `ctx` on globalThis just for the duration of the call.
-function _withFxCtx(fn) {
-  if (!fxCanvas || fxCanvas === canvas) { fn(); return; }
-  // Note: ctx is `const`. We can't reassign. Instead the drawParticles + drawScorePopups
-  // implementations already read `ctx` from the enclosing closure — so we shadow it
-  // via the `globalThis.ctx` proxy approach. Simpler: monkey-patch CanvasRenderingContext2D
-  // methods only if needed. For now, draw onto fxCtx by reflection.
-  const orig = ctx;
-  // We can't truly swap a const — so we just call drawParticles/drawScorePopups
-  // with the existing ctx (which still points at game-canvas's 2d context, but
-  // Pixi owns that buffer). However, the fx-canvas has same size and overlays
-  // game-canvas with z-index 3, so duplicating draw calls to both works fine.
-  // For perf we instead temporarily monkey-patch ctx.fillText etc. — but that's
-  // over-engineered. Simplest correct fix: draw to fxCtx by re-implementing
-  // the per-frame iteration here.
-  if (fn === drawParticles) { _drawParticlesOn(fxCtx); return; }
-  if (fn === drawScorePopups) { _drawScorePopupsOn(fxCtx); return; }
-  fn();
-}
-function _drawParticlesOn(c) {
-  // Mirror drawParticles' rendering into the given context — minimal port that
-  // handles puff/sparkle/petal/default shapes.
-  const next = [];
-  for (const p of game.particles) {
-    p.t += 1;
-    if (p.t > p.life) continue;
-    const k = p.t / p.life;
-    const pos = normToScreen(p.x, p.y);
-    if (p.shape === 'puff') {
-      const scale = 1 + k * 0.7;
-      c.save();
-      c.globalAlpha = 0.7 * (1 - k);
-      c.fillStyle = p.color || '#fff';
-      c.beginPath();
-      c.arc(pos.x + (p.vx * p.t || 0), pos.y + (p.vy * p.t || 0) - k * 8, (p.r || 8) * scale, 0, Math.PI*2);
-      c.fill();
-      c.restore();
-    } else if (p.shape === 'sparkle') {
-      c.save(); c.globalAlpha = 1 - k; c.fillStyle = p.color || '#fff';
-      const cx = pos.x + p.vx * p.t, cy = pos.y + p.vy * p.t + 0.5 * 0.05 * p.t * p.t;
-      const r = p.r * (1 - k * 0.4);
-      c.beginPath(); c.moveTo(cx - r*3, cy); c.lineTo(cx, cy - r); c.lineTo(cx + r*3, cy); c.lineTo(cx, cy + r); c.closePath(); c.fill();
-      c.beginPath(); c.moveTo(cx, cy - r*3); c.lineTo(cx - r, cy); c.lineTo(cx, cy + r*3); c.lineTo(cx + r, cy); c.closePath(); c.fill();
-      c.restore();
-    } else if (p.shape === 'petal') {
-      c.save(); c.globalAlpha = 1 - k; c.fillStyle = p.color;
-      const sway = Math.sin((p.t + (p.seed||0)) * 0.08) * 15;
-      c.translate(pos.x + sway, pos.y + p.vy * p.t + 0.5 * 0.025 * p.t * p.t);
-      c.rotate((p.rot || 0) + p.t * 0.02);
-      c.beginPath(); c.ellipse(0, 0, p.r * 0.6, p.r * 1.3, 0, 0, Math.PI*2); c.fill();
-      c.restore();
-    } else {
-      c.save(); c.globalAlpha = 1 - k; c.fillStyle = p.color;
-      c.beginPath();
-      c.arc(pos.x + p.vx * p.t, pos.y + p.vy * p.t + 0.5 * 0.05 * p.t * p.t, p.r * (1 - k * 0.5), 0, Math.PI*2);
-      c.fill();
-      c.restore();
-    }
-    next.push(p);
-  }
-  game.particles = next;
-}
-function _drawScorePopupsOn(c) {
-  // No-op — the v0.4 score popups went DOM-based (.score-pop in coin-fly-layer).
-  // Kept here for parity with the legacy canvas-based path.
 }
 requestAnimationFrame(frame);
 
